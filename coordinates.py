@@ -31,7 +31,7 @@ import sympy as sp
 # Define symbols
 x, y, Z = sp.symbols('x y Z')
 hx, hy, hw, hh = sp.symbols('hx hy hw hh')
-s1, s2, n, Zt = sp.symbols('s1 s2 H')
+s1, s2, n, Zt = sp.symbols('s1 s2 n Zt')
 
 # Define functions
 hill = hh * sp.exp( -( (x - hx)**2 + (y - hy)**2 ) / hw**2 )
@@ -47,6 +47,9 @@ z = Z + h1 * b1 + h2 * b2
 dz_dZ = sp.diff(z, Z)
 print(dz_dZ)
 
+#-------------------------------------------------------------------------------
+# Discrete
+#
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -56,37 +59,37 @@ y0=0; y1=1000;
 
 # hill
 hh = 100; hw = 100;
-hx = (x0+x1)/2; hy = (y0+y1)/2;
+hx = (x0 + x1)/2; hy = (y0 + y1)/2;
 
 # coordinates
 s1 = 150; s2 = 150;
-Zt = 500;
+n = 1.2; Zt = 500; zt = 600;
 
 # functions
-hill = lambda x,y: hh * np.exp(- ((x-hx)**2 + (y-hy)**2)/hw**2)
+hill = lambda x,y: hh * np.exp( -( (x - hx)**2 + (y - hy)**2 ) / hw**2 )
 h1 = lambda x,y: hill(x,y);
 h2 = lambda x,y: 0*x*y;
-b1 = lambda Z: np.sinh((Zt-Z)/s1) / np.sinh(Zt/s1)
-b2 = lambda Z: np.sinh((Zt-Z)/s2) / np.sinh(Zt/s2)
+b1 = lambda Z: np.sinh( (Zt/s1)**n - (Z/s1)**n ) / np.sinh( (Zt/s1)**n )
+b2 = lambda Z: np.sinh( (Zt/s2)**n - (Z/s2)**n ) / np.sinh( (Zt/s2)**n )
 
 z = lambda x,y,Z:  Z + h1(x,y) * b1(Z)+ h2(x,y) * b2(Z);
 
 # plot
 px = np.linspace(x0,x1,100)
 pz = np.linspace(0,Zt, 100)
-plt.figure(1); plt.clf(); plt.show(block=False)
+plt.figure(1); # plt.clf(); plt.show(block=False)
 #PX, PZ = np.meshgrid(px, pz)
 #plt.contourf(PX, PZ, z(PX,hy, PZ), 50, edgecolors='black')
 #plt.plot(px,hill(px,hy))
-for zhat in range(0,Zt,50):
-    plt.plot(px,z(px,hy, zhat))
+for zhat in range(0,zt,50):
+    plt.plot(px,z(px,hy, zhat), color="blue")
 plt.draw()
 
 #-------------------------------------------------------------------------------
 # Jacobian
 #
-Jm1 = lambda x,y,Z: -hh*np.exp((-(-hx + x)**2 - (-hy + y)**2)/hw**2)*np.cosh((Zt - Z)/s1)/(s1*np.sinh(Zt/s1)) + 1
-plt.figure(1); plt.clf(); plt.show(block=False)
-for zhat in range(0,Zt,50):
-    plt.plot(px,Jm1(px,hy, zhat))
+Jm1 = lambda x,y,Z: 1 - hh*n*(Z/s1)**n*np.exp((-(-hx + x)**2 - (-hy + y)**2)/hw**2)*np.cosh((Zt/s1)**n - (Z/s1)**n)/(Z*np.sinh((Zt/s1)**n))
+plt.figure(1); # plt.clf(); plt.show(block=False)
+for zhat in range(0,zt,50):
+    plt.plot(px,Jm1(px,hy, zhat), color="blue")
 plt.draw()
