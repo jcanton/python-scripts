@@ -13,7 +13,7 @@ from icon4py.model.common.io import plots
 # savepoint_path = 'testdata/ser_icondata/mpitask1/torus_hill.flat.ser_data/ser_data'
 # grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res100m.nc"
 
-mpl.use("tkagg")
+# mpl.use("tkagg")
 
 Z_TOP = 200
 QSCALE = 50
