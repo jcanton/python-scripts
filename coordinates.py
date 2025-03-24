@@ -89,7 +89,7 @@ for k in range(nlev+1):
         pJacobian[:,k] = dz_dZ_func(px, py, Z, Zt, s1, s2, 1.2,  hx, hy, hh, hw)
     #
     plt.plot(px,z_ifc[:,k], color="black")
-    #plt.plot(x_coords_i[:,k], y_coords_i[:,k], "--b")
+    plt.plot(px,y_coords_i[:,k], color="blue")
 plt.xlim([x0,x1])
 plt.ylim([0,Zt])
 plt.draw()
@@ -101,18 +101,18 @@ for k in range(nlev):
 
 norm = lambda cmin, cmax: colors.Normalize(vmin=min(-1e-9, cmin), vmax=max(1e-9,cmax))
 
-# plt.figure(2); plt.clf(); plt.show(block=False)
-# data = pJacobian
-# im = plt.pcolormesh(pX,z_ifc,data, cmap="YlOrRd") #, norm=norm(data.min(), data.max()))
-# cbar = plt.colorbar(im)
-# cbar.set_ticks(np.linspace(cbar.vmin, cbar.vmax, 5))
-# cbar.set_ticklabels([f"{c:.2f}" for c in np.linspace(cbar.vmin, cbar.vmax, 5)])
-# plt.axis("equal")
-# plt.xlim([x0,x1])
-# plt.ylim([0,Zt])
-# plt.draw()
+plt.figure(1); plt.clf(); plt.show(block=False)
+data = pJacobian
+im = plt.pcolormesh(pX,z_ifc,data, cmap="YlOrRd") #, norm=norm(data.min(), data.max()))
+cbar = plt.colorbar(im)
+cbar.set_ticks(np.linspace(cbar.vmin, cbar.vmax, 5))
+cbar.set_ticklabels([f"{c:.2f}" for c in np.linspace(cbar.vmin, cbar.vmax, 5)])
+plt.axis("equal")
+plt.xlim([x0,x1])
+plt.ylim([0,Zt])
+plt.draw()
 
-plt.figure(3); plt.clf(); plt.show(block=False)
+plt.figure(1); plt.clf(); plt.show(block=False)
 data = ddqz_z
 im = plt.pcolormesh(pX[:,:-1],z_mc,data, cmap="YlOrRd", norm=norm(data.min(), data.max()))
 cbar = plt.colorbar(im)

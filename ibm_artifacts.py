@@ -8,9 +8,10 @@ import numpy as np
 
 from icon4py.model.common.io import plots
 
-# # fortran
-# ds = xr.open_dataset(f"/scratch/l_jcanton/plot_data/torus_exclaim.iccarus_hill/torus_exclaim_insta_DOM01_ML_0066.nc")
-# data  = ds.w.values[0,:,:].T
+# fortran
+import xarray as xr
+ds = xr.open_dataset(f"/scratch/l_jcanton/plot_data/torus_exclaim.iccarus_hill_hour/torus_exclaim_insta_DOM01_ML_0061.nc")
+data  = ds.w.values[0,:,:].T
 
 # mpl.use("tkagg")
 
@@ -64,7 +65,7 @@ with open(pickle_prog, "rb") as f:
 with open(pickle_diag, "rb") as f:
     diagnostic_state = pickle.load(f)
 
-vname = "z_q"
+vname = "ddqz_z_half"
 data = prognostic_matr[vname]
 
 axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
