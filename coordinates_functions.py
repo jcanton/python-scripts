@@ -22,7 +22,7 @@ def smooth_topography(x_coords, topography):
 
     dx = x_coords[1:] - x_coords[:-1]
     dx = np.concatenate((dx, [dx[-1]]))
-    smoothed_topography = topography
+    smoothed_topography = topography.copy()
     for _ in range(25):
         nabla2_topo = _compute_ddx(x_coords,smoothed_topography)
         smoothed_topography += 0.125 * nabla2_topo * dx
