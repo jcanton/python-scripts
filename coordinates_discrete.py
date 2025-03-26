@@ -5,37 +5,55 @@ import coordinates_functions as cf
 
 #-------------------------------------------------------------------------------
 # Domain and topography
+#
+case_name = "brigitta"
 
-if False:
-    # Uniformly spaced and hill
-    nx = 1000
-    x0=0; x1=1000;
-    y0=0; y1=1000;
-    # hill topography
-    hh = 100; hw = 100;
-    hx = 500; hy = 500;
+match case_name:
+    case "hill_small":
+        # Small ICCARUS hill
+        nx = 1000
+        x0=0; x1=1000;
+        y0=0; y1=1000;
+        # hill topography
+        hh = 100; hw = 100;
+        hx = (x0+x1)/2; hy = (y0+y1)/2;
+        # vertical coordinates
+        s1 = 250; s2 = 250;
+        Zt = 600; flat_height = 500;
+        lowest_layer_thickness = 3 # min layer thickness
+        stretch_factor = 1
+        num_levels = 100
+    case "hill_paper":
+        # Tall mountain
+        nx = 1000
+        x0=0; x1=50000;
+        y0=0; y1=50000;
+        # hill topography
+        hh = 4000; hw = 2000;
+        hx = (x0+x1)/2; hy = (y0+y1)/2;
+        # vertical coordinates
+        s1 = 4000; s2 = 2500;
+        Zt = 35000; flat_height = 16000;
+        lowest_layer_thickness = 10 # min layer thickness
+        stretch_factor = 1
+        num_levels = 50
+    case "brigitta":
+        # load icon data
+        with open("coordinates_discrete_brigitta.pkl", "rb") as f:
+            x_coords, topography = pickle.load(f)
+        # vertical coordinates
+        s1 = 4000; s2 = 2500;
+        Zt = 22000; flat_height = 16000;
+        lowest_layer_thickness = 20
+        stretch_factor = 0.65
+        num_levels = 80
+
+if "hill" in case_name:
     hill = lambda x,y: hh * np.exp( -( (x - hx)**2 + (y - hy)**2 ) / hw**2 )
-    # vertical coordinates
-    s1 = 250; s2 = 250;
-    Zt = 600; flat_height = 500;
-    lowest_layer_thickness = 3 # min layer thickness
-    stretch_factor = 1
-    num_levels = 100
-    #
     # discrete arrays
     x_coords = np.linspace(x0,x1,nx)
     y_coords = hy*np.ones(nx)
     topography = hill(x_coords, y_coords)
-else:
-    # load icon data
-    with open("coordinates_discrete_brigitta.pkl", "rb") as f:
-        x_coords, topography = pickle.load(f)
-    # vertical coordinates
-    s1 = 4000; s2 = 2500;
-    Zt = 22000; flat_height = 16000;
-    lowest_layer_thickness = 20
-    stretch_factor = 0.65
-    num_levels = 80
 
 #-------------------------------------------------------------------------------
 # Smooth topography: h1 and h2
