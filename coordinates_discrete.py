@@ -18,7 +18,7 @@ match case_name:
         hh = 100; hw = 100;
         hx = (x0+x1)/2; hy = (y0+y1)/2;
         # vertical coordinates
-        s1 = 250; s2 = 250;
+        s1 = 150; s2 = 150;
         Zt = 600; flat_height = 500;
         lowest_layer_thickness = 3 # min layer thickness
         stretch_factor = 1
@@ -29,10 +29,10 @@ match case_name:
         x0=0; x1=50000;
         y0=0; y1=50000;
         # hill topography
-        hh = 4000; hw = 2000;
+        hh = 7000; hw = 2000;
         hx = (x0+x1)/2; hy = (y0+y1)/2;
         # vertical coordinates
-        s1 = 4000; s2 = 2500;
+        s1 = 7000; s2 = 7500;
         Zt = 35000; flat_height = 16000;
         lowest_layer_thickness = 10 # min layer thickness
         stretch_factor = 1
@@ -77,7 +77,7 @@ z_ifc = cf.compute_SLEVE_coordinate(
     vct_a=vct_a,
     topography=topography,
     flat_height=flat_height,
-    model_top=flat_height,
+    model_top=Zt,
     decay_scale_1=s1,
     decay_scale_2=s2,
     num_levels=num_levels,
@@ -104,24 +104,25 @@ cc_ddqz_z = cf.compute_ddqz(vertical_coordinate=cc_z_ifc)
 #
 pX = np.tile(x_coords, (num_levels,1)).T
 
-fig=plt.figure(1); plt.clf(); plt.show(block=False)
-plt.plot(x_coords, topography,             "-",  color="black",  label="Topography")
-plt.plot(x_coords, smoothed_topography,    "--", color="orange", label="Smoothed topography")
-plt.plot(x_coords, small_scale_topography, ":",  color="blue",   label="Small-scale topo")
-plt.legend()
-plt.draw()
-#plt.savefig("imgs/topography.png", bbox_inches="tight")
+# fig=plt.figure(1); plt.clf(); plt.show(block=False)
+# plt.plot(x_coords, topography,             "-",  color="black",  label="Topography")
+# plt.plot(x_coords, smoothed_topography,    "--", color="orange", label="Smoothed topography")
+# plt.plot(x_coords, small_scale_topography, ":",  color="blue",   label="Small-scale topo")
+# plt.legend()
+# plt.draw()
+# #plt.savefig("imgs/topography.png", bbox_inches="tight")
 
-fig=plt.figure(2); plt.clf(); plt.show(block=False)
-(ax1, ax2) = fig.subplots(1, 2, sharex=True, sharey=True)
+fig=plt.figure(2, figsize=(14,6)); plt.clf(); plt.show(block=False)
+(ax1, ax2, ax3) = fig.subplots(1, 3, sharex=True, sharey=True)
 for k in range(num_levels+1):
-    ax1.plot(x_coords,    z_ifc[:,k], "-", color="black")
-    ax1.plot(x_coords, cc_z_ifc[:,k], "--", color="blue")
-    ax2.plot(x_coords, cc_z_ifc[:,k], "-", color="blue")
+    ax1.plot(x_coords,    z_ifc[:,k], "-",  color="black")
+    ax2.plot(x_coords,    z_ifc[:,k], "-",  color="black")
+    ax2.plot(x_coords, cc_z_ifc[:,k], "--", color="blue")
+    ax3.plot(x_coords, cc_z_ifc[:,k], "-",  color="blue")
 #ax1.set_aspect('equal')
 #ax2.set_aspect('equal')
 plt.draw()
-#plt.savefig("imgs/z_ifc.png", bbox_inches="tight")
+plt.savefig("imgs/z_ifc2.pdf", bbox_inches="tight")
 
 fig=plt.figure(3, figsize=(14,6)); plt.clf(); plt.show(block=False)
 cmax = ddqz_z.max()

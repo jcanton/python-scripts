@@ -36,9 +36,12 @@ def compute_vct_a(
     stretch_factor,
     num_levels,
 ):
-    # src/atm_dyn_iconam/mo_init_vgrid.f90  󰊕 init_sleve_coord  mo_init_vgrid
-    d = np.log( lowest_layer_thickness / model_top) / np.log( 2.0 / np.pi * np.arccos( float(num_levels - 1) ** stretch_factor / float(num_levels) ** stretch_factor))
-    vct_a = model_top * ( 2.0 / np.pi * np.arccos( np.arange(num_levels + 1, dtype=float) ** stretch_factor / float(num_levels) ** stretch_factor)) ** d
+    if stretch_factor > 0:
+        # src/atm_dyn_iconam/mo_init_vgrid.f90  󰊕 init_sleve_coord  mo_init_vgrid
+        d = np.log( lowest_layer_thickness / model_top) / np.log( 2.0 / np.pi * np.arccos( float(num_levels - 1) ** stretch_factor / float(num_levels) ** stretch_factor))
+        vct_a = model_top * ( 2.0 / np.pi * np.arccos( np.arange(num_levels + 1, dtype=float) ** stretch_factor / float(num_levels) ** stretch_factor)) ** d
+    else:
+        vct_a = np.linspace(0, model_top, num_levels + 1)[::-1]
     return vct_a
 
 
@@ -170,7 +173,7 @@ def check_and_correct_layer_thickness(
     # Check if ktop_thicklimit is sufficiently far away from the model top
     if not np.all(ktop_thicklimit > 2):
         if num_levels > 6:
-            raise ValueError(
+            print(
                 f"Model top is too low and num_levels, {num_levels}, > 6."
             )
         else:
