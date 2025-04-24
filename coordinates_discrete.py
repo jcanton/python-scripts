@@ -39,7 +39,7 @@ match case_name:
         num_levels = 50
     case "brigitta":
         # load icon data
-        with open("coordinates_discrete_brigitta.pkl", "rb") as f:
+        with open("data/coordinates_discrete_brigitta.pkl", "rb") as f:
             x_coords, topography = pickle.load(f)
         # vertical coordinates
         s1 = 4000; s2 = 2500;

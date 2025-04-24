@@ -65,7 +65,7 @@ if False:
     py = hy*np.ones(nx)
 else:
     # load icon data
-    with open("coordinates_section.pkl", "rb") as f:
+    with open("data/coordinates_section.pkl", "rb") as f:
         px, py, ddqz_z_half = pickle.load(f)
         nx = px.shape[0]
 

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 
 # load data
-with open("waves.pkl", "rb") as f:
+with open("data/waves.pkl", "rb") as f:
     px, py, icon_ddqz_z_half, z_ifc = pickle.load(f)
 
 ix = 65
