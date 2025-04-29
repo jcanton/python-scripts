@@ -58,7 +58,7 @@ vct_a = Zt * ( 2.0 / np.pi * np.arccos( np.arange(nlev + 1, dtype=float) ** s / 
 # plot
 #
 
-if False:
+if True:
     # uniformly spaced
     nx = 100
     px = np.linspace(x0,x1,nx)

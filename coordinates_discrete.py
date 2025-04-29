@@ -6,7 +6,7 @@ import coordinates_functions as cf
 #-------------------------------------------------------------------------------
 # Domain and topography
 #
-case_name = "brigitta"
+case_name = "hill_smooth"
 
 match case_name:
     case "hill_small":
@@ -22,6 +22,20 @@ match case_name:
         Zt = 600; flat_height = 500;
         lowest_layer_thickness = 3 # min layer thickness
         stretch_factor = 1
+        num_levels = 100
+    case "hill_smooth":
+        # Small hill with good SLEVE parameters
+        nx = 1000
+        x0=0; x1=1000;
+        y0=0; y1=1000;
+        # hill topography
+        hh = 100; hw = 100;
+        hx = (x0+x1)/2; hy = (y0+y1)/2;
+        # vertical coordinates
+        s1 = 250; s2 = 250;
+        Zt = 1000; flat_height = 900;
+        lowest_layer_thickness = 0.1 # min layer thickness
+        stretch_factor = -1
         num_levels = 100
     case "hill_paper":
         # Tall mountain
