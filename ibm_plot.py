@@ -58,7 +58,7 @@ if f_or_p == 'f':
     output_files = os.listdir(fortran_files_dir)
     output_files.sort()
 elif f_or_p == 'p':
-    python_files_dir = main_dir + "imgs/" #run_name
+    python_files_dir = main_dir + run_name
     output_files = os.listdir(python_files_dir)
     output_files.sort()
 
@@ -72,20 +72,22 @@ for filename in output_files:
         if not filename.startswith("exclaim_gauss3d_sb_insta"):
             continue
         ds = xr.open_dataset(fortran_files_dir + filename)
-        data = ds.w.values[0,:,:].T
+        data_w  = ds.w.values[0,:,:].T
+        data_vn = ds.vn.values[0,:,:].T
 
     elif f_or_p == 'p':
         if not filename.endswith(".pkl"):
             continue
         with open(python_files_dir + filename, "rb") as f:
             state = pickle.load(f)
-        data = state['w']
+        data_w  = state['w']
+        data_vn = state['vn']
 
 
     print(f"Plotting {filename}")
 
     axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
-        data=data,
+        data=data_w,
         sections_x=[],
         sections_y=[500],
         label="w",
@@ -94,10 +96,12 @@ for filename in output_files:
     )
     #axs[0].plot(x, hill, "--", color="black")
     axs[0].set_aspect("equal")
-    # axs[0].set_xlim([150,850])
-    #axs[0].set_ylim([-1, 500])
     axs[0].set_xlabel("x [m]")
     axs[0].set_ylabel("z [m]")
     plt.draw()
-    #plt.show(block=False)
-    plt.savefig(f"{imgs_dir}/{filename[:-4]}.png", dpi=600)
+    plt.savefig(f"{imgs_dir}/{filename[:-4]}_section_w.png", dpi=600)
+
+    axs, edge_x, edge_y, vn, vt = plot.plot_levels(data_vn, 10, label=f"vvec_edge")
+    axs[0].set_aspect("equal")
+    plt.draw()
+    plt.savefig(f"{imgs_dir}/{filename[:-4]}_levels_uv.png", dpi=600)
