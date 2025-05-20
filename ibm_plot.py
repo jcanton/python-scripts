@@ -12,12 +12,12 @@ from icon4py.model.common.io import plots
 QSCALE = 50
 PEVERY = 1
 
-f_or_p = 'f'
+f_or_p = 'p'
 
 hill_x = 500.0
 hill_y = 500.0
 hill_height = 100.0
-hill_width = 100.0
+hill_width  = 100.0
 compute_distance_from_hill = lambda x, y: ((x - hill_x) ** 2 + (y - hill_y) ** 2) ** 0.5
 compute_hill_elevation = lambda x, y: hill_height * np.exp(
     -((compute_distance_from_hill(x, y) / hill_width) ** 2)
@@ -28,6 +28,13 @@ hill = compute_hill_elevation(x, y)
 
 main_dir = os.getcwd() + "/../icon4py/"
 grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
+run_name = "run10_cube100x100x100_nlev400/"
+
+imgs_dir=run_name
+
+if not os.path.exists(imgs_dir):
+    os.makedirs(imgs_dir)
+
 
 # -------------------------------------------------------------------------------
 # Serialized data
@@ -35,7 +42,7 @@ grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_
 if f_or_p == 'f':
     savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
 elif f_or_p == 'p':
-    savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform100_flat/ser_data/"
+    savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform400_flat/ser_data/"
 
 plot = plots.Plot(
     savepoint_path=savepoint_path,
@@ -51,7 +58,7 @@ if f_or_p == 'f':
     output_files = os.listdir(fortran_files_dir)
     output_files.sort()
 elif f_or_p == 'p':
-    python_files_dir = main_dir + "imgs/"
+    python_files_dir = main_dir + "imgs/" #run_name
     output_files = os.listdir(python_files_dir)
     output_files.sort()
 
@@ -80,12 +87,12 @@ for filename in output_files:
     axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
         data=data,
         sections_x=[],
-        sections_y=[hill_y],
+        sections_y=[500],
         label="w",
         plot_every=PEVERY,
         qscale=QSCALE,
     )
-    axs[0].plot(x, hill, "--", color="black")
+    #axs[0].plot(x, hill, "--", color="black")
     axs[0].set_aspect("equal")
     # axs[0].set_xlim([150,850])
     #axs[0].set_ylim([-1, 500])
@@ -93,4 +100,4 @@ for filename in output_files:
     axs[0].set_ylabel("z [m]")
     plt.draw()
     #plt.show(block=False)
-    plt.savefig(f"figures_fortran/{filename[:-3]}.png", dpi=600)
+    plt.savefig(f"{imgs_dir}/{filename[:-4]}.png", dpi=600)
