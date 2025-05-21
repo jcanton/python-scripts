@@ -55,7 +55,7 @@ plot = plots.Plot(
 
 # -------------------------------------------------------------------------------
 #
-def export_vtk(tri, half_level_heights, filename: str, data: dict):
+def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     """
     Export data to a VTK UnstructuredGrid (.vtu, binary) file for ParaView/VisIt.
     Assumes a triangular grid extruded in z to form VTK_WEDGE cells.
@@ -77,7 +77,12 @@ def export_vtk(tri, half_level_heights, filename: str, data: dict):
     # --- Build wedge cells ---
     # Each wedge is formed by connecting a triangle at level k and k+1
     wedges = []
+    unmasked_cell_indices = []
+    mask = getattr(tri, 'mask', None)
     for cell_id, (v0, v1, v2) in enumerate(tri.triangles):  # tri.triangles: (num_cells, 3)
+        if mask is not None and mask[cell_id]:
+            continue  # skip masked triangles
+        unmasked_cell_indices.append(cell_id)
         for k in range(num_half_levels - 1):
             # Compute global vertex indices for bottom and top triangles
             v0b = v0 + k * num_vertices
@@ -99,8 +104,9 @@ def export_vtk(tri, half_level_heights, filename: str, data: dict):
             # Flatten to (num_vertices * num_half_levels,)
             point_data[name] = arr.flatten()
         elif arr.shape[0] == num_cells:  # cell-centered data
-            # Each wedge corresponds to a cell at (cell_id, k)
-            arr3d = arr[:, :-1]  # shape: (num_cells, num_half_levels-1)
+            # Only include unmasked cells
+            arr_unmasked = arr[unmasked_cell_indices, :]
+            arr3d = arr_unmasked[:, :-1]  # shape: (num_unmasked_cells, num_half_levels-1)
             cell_data[name] = [arr3d.flatten()]
         else:
             raise ValueError(f"Unsupported data shape for '{name}': {arr.shape}")
