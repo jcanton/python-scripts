@@ -106,7 +106,14 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
         elif arr.shape[0] == num_cells:  # cell-centered data
             # Only include unmasked cells
             arr_unmasked = arr[unmasked_cell_indices, :]
-            arr3d = arr_unmasked[:, :-1]  # shape: (num_unmasked_cells, num_half_levels-1)
+            if arr_unmasked.shape[1] == num_half_levels-1:
+                # Data defined on full levels (wedge centers)
+                arr3d = arr_unmasked[:, :]
+            else:
+                # Data defined on half levels (wedge triangular faces)
+                # For now, we remove the last (ground) half level
+                # and plot it at wedge centers
+                arr3d = arr_unmasked[:, :-1]
             cell_data[name] = [arr3d.flatten()]
         else:
             raise ValueError(f"Unsupported data shape for '{name}': {arr.shape}")
