@@ -106,15 +106,24 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
         elif arr.shape[0] == num_cells:  # cell-centered data
             # Only include unmasked cells
             arr_unmasked = arr[unmasked_cell_indices, :]
-            if arr_unmasked.shape[1] == num_half_levels-1:
+            # Handle vector fields (shape: (num_cells, num_levels, 3))
+            if arr_unmasked.ndim == 3 and arr_unmasked.shape[2] == 3:
                 # Data defined on full levels (wedge centers)
-                arr3d = arr_unmasked[:, :]
+                arr3d = arr_unmasked[:, :, :]
+                # Flatten to (num_cells * num_levels, 3)
+                cell_data[name] = [arr3d.reshape(-1, 3)]
+            elif arr_unmasked.ndim == 2:
+                if arr_unmasked.shape[1] == num_half_levels-1:
+                    # Data defined on full levels (wedge centers)
+                    arr3d = arr_unmasked[:, :]
+                else:
+                    # Data defined on half levels (wedge triangular faces)
+                    # For now, we remove the last (ground) half level
+                    # and plot it at wedge centers
+                    arr3d = arr_unmasked[:, :-1]
+                cell_data[name] = [arr3d.flatten()]
             else:
-                # Data defined on half levels (wedge triangular faces)
-                # For now, we remove the last (ground) half level
-                # and plot it at wedge centers
-                arr3d = arr_unmasked[:, :-1]
-            cell_data[name] = [arr3d.flatten()]
+                raise ValueError(f"Unsupported cell data shape for '{name}': {arr.shape}")
         else:
             raise ValueError(f"Unsupported data shape for '{name}': {arr.shape}")
 
@@ -161,6 +170,8 @@ for filename in output_files[:1]:
         data_w  = state['w']
         data_vn = state['vn']
 
+    u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
+    w_cf = plot._scal_interpolate_to_full_levels(data_w)
 
     print(f"Plotting {filename}")
 
@@ -171,6 +182,7 @@ for filename in output_files[:1]:
         data={
             #"vn": data_vn,
             "w": data_w,
+            "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
         }
     )
     #axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
