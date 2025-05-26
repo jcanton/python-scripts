@@ -2,6 +2,7 @@
 imgs*
 *.png
 testdata
+run*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
