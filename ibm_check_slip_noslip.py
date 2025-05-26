@@ -35,7 +35,7 @@ cases = [
     main_dir + "run01_hill100x100_nlev200_noSlip/",
 ]
 output_files = [
-    "end_of_timestep_000100.pkl"
+    "end_of_timestep_002900.pkl"
 ]
 
 # -------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ profiles = [
 ]
 # compute distances and find coordinates
 for profile in profiles:
-    cell_dist = np.sqrt( (tri.x      - profile[0])**2 + (tri.y      - profile[1])**2 )
+    cell_dist = np.sqrt( (tri.cell_x - profile[0])**2 + (tri.cell_y - profile[1])**2 )
     edge_dist = np.sqrt( (tri.edge_x - profile[0])**2 + (tri.edge_y - profile[1])**2 )
     cell_id = cell_dist.argmin()
     edge_id = edge_dist.argmin()
@@ -68,8 +68,8 @@ for i, profile in enumerate(profiles):
     cell_id = profile[2]
     edge_id = profile[3]
 
-    axs[0, i].set_title(f"(x,y) = ({tri.cell_x[cell_id]:.0f}, {tri.cell_y[cell_id]:.0f})m")
-    axs[1, i].set_title(f"(x,y) = ({tri.edge_x[edge_id]:.0f}, {tri.edge_y[edge_id]:.0f})m")
+    axs[0, i].set_title(f"(x,y) = ({tri.cell_x[cell_id]:.1f}, {tri.cell_y[cell_id]:.1f})m")
+    axs[1, i].set_title(f"(x,y) = ({tri.edge_x[edge_id]:.1f}, {tri.edge_y[edge_id]:.1f})m")
 
     for j, case in enumerate(cases):
 
@@ -99,7 +99,7 @@ for i, profile in enumerate(profiles):
 axs[0, 0].set_ylabel("z [m]")
 axs[1, 0].set_ylabel("z [m]")
 # axs[0,0].set_ylim([-1,Z_TOP])
-axs[0, 0].set_ylim([90, 110])
+axs[0, 0].set_ylim([70, 110])
 # axs[0].legend(fontsize="small")
 plt.draw()
-plt.savefig(imgs_dir + "/compare.png", dpi=600, bbox_inches="tight")
+plt.savefig(imgs_dir + "/compare.png", dpi=600)
