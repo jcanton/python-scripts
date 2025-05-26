@@ -8,11 +8,12 @@ import numpy as np
 
 
 from icon4py.model.common.io import plots
+from icon4py.model.atmosphere.dycore import ibm
 
 QSCALE = 50
 PEVERY = 1
 
-f_or_p = 'p'
+f_or_p = 'f'
 
 hill_x = 500.0
 hill_y = 500.0
@@ -28,14 +29,7 @@ hill = compute_hill_elevation(x, y)
 
 main_dir = os.getcwd() + "/../icon4py/"
 grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
-run_dir  = "/scratch/l_jcanton/run_data/"
-run_name = "run00_hill100x100_nlev100/"
-#run_name = "run10_cube100x100x100_nlev400/"
 
-imgs_dir=run_name
-
-if not os.path.exists(imgs_dir):
-    os.makedirs(imgs_dir)
 
 
 # -------------------------------------------------------------------------------
@@ -43,11 +37,28 @@ if not os.path.exists(imgs_dir):
 #
 if f_or_p == 'f':
     savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
+    #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.grid10_uniform100_hill100x100/ser_data/"
+    fortran_files_dir = "/capstor/scratch/cscs/jcanton/plot_data/exclaim_gauss3d.uniform100_hill100x100_Fr022/"
+    imgs_dir="runf3_hill100x100_nlev100_Fr022"
 elif f_or_p == 'p':
-    #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform100_flat/ser_data/"
-    savepoint_path = "/scratch/l_jcanton/ser_data/exclaim_gauss3d.uniform100_flat/ser_data/"
+    savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
+    #savepoint_path = "/scratch/l_jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
+    run_dir = "/capstor/scratch/cscs/jcanton/icon4py/"
+    #run_dir  = "/scratch/l_jcanton/run_data/"
+    run_name = "run03_hill100x100_nlev800/"
+    #run_name = "run10_cube100x100x100_nlev400/"
+    imgs_dir=run_name
+
+if not os.path.exists(imgs_dir):
+    os.makedirs(imgs_dir)
 
 plot = plots.Plot(
+    savepoint_path=savepoint_path,
+    grid_file_path=grid_file_path,
+    backend=gtx.gtfn_cpu,
+)
+_ibm = ibm.ImmersedBoundaryMethod(
+    grid=plot.grid,
     savepoint_path=savepoint_path,
     grid_file_path=grid_file_path,
     backend=gtx.gtfn_cpu,
@@ -61,6 +72,8 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     Assumes a triangular grid extruded in z to form VTK_WEDGE cells.
     """
     import meshio
+    from scipy.interpolate import griddata
+
     num_vertices = len(tri.x)
     num_cells = len(tri.cell_x)
     num_half_levels = half_level_heights.shape[1]
@@ -69,9 +82,15 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     # tri.x, tri.y are (num_vertices,)
     points = []
     for k in range(num_half_levels):
-        z = half_level_heights[:, k]  # shape: (num_vertices,)
+
+        cell_centres = np.column_stack((tri.cell_x, tri.cell_y))
+        z_cells = half_level_heights[:,k]  # shape (num_cells,)
+        vertices = np.column_stack((tri.x, tri.y))  # shape (num_vertices, 2)
+        z_verts = griddata(cell_centres, z_cells, vertices, method='linear')
+        z_verts_fill = griddata(cell_centres, z_cells, vertices, method='nearest')
+        z_verts = np.where(np.isnan(z_verts), z_verts_fill, z_verts)
         for i in range(num_vertices):
-            points.append([tri.x[i], tri.y[i], z[i]])
+            points.append([tri.x[i], tri.y[i], z_verts[i]])
     points = np.array(points)
 
     # --- Build wedge cells ---
@@ -140,7 +159,6 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
 # Load plot data
 
 if f_or_p == 'f':
-    fortran_files_dir = "/capstor/scratch/cscs/jcanton/plot_data/exclaim_gauss3d.uniform100_hill100x100/"
     output_files = os.listdir(fortran_files_dir)
     output_files.sort()
 elif f_or_p == 'p':
@@ -153,7 +171,7 @@ elif f_or_p == 'p':
 # Plot
 #
 
-for filename in output_files[:1]:
+for filename in output_files[:10]:
 
     if f_or_p == 'f':
         if not filename.startswith("exclaim_gauss3d_sb_insta"):
@@ -170,35 +188,36 @@ for filename in output_files[:1]:
         data_w  = state['w']
         data_vn = state['vn']
 
-    u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
-    w_cf = plot._scal_interpolate_to_full_levels(data_w)
-
     print(f"Plotting {filename}")
 
+    u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
+    w_cf = plot._scal_interpolate_to_full_levels(data_w)
     export_vtk(
         tri=plot.tri,
         half_level_heights=plot.half_level_heights,
-        filename=f"{filename[:-4]}.vtu",
+        filename=f"{imgs_dir}/{filename.split(sep='.')[0]}.vtu",
         data={
             #"vn": data_vn,
             "w": data_w,
             "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
+            "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float),
         }
     )
-    #axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
-    #    data=data_w,
-    #    sections_x=[],
-    #    sections_y=[500],
-    #    label="w",
-    #    plot_every=PEVERY,
-    #    qscale=QSCALE,
-    #)
-    ##axs[0].plot(x, hill, "--", color="black")
-    #axs[0].set_aspect("equal")
-    #axs[0].set_xlabel("x [m]")
-    #axs[0].set_ylabel("z [m]")
-    #plt.draw()
-    #plt.savefig(f"{imgs_dir}/{filename[:-4]}_section_w.png", dpi=600)
+
+    axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
+        data=data_w,
+        sections_x=[],
+        sections_y=[500],
+        label="w",
+        plot_every=PEVERY,
+        qscale=QSCALE,
+    )
+    axs[0].plot(x, hill, "--", color="black")
+    axs[0].set_aspect("equal")
+    axs[0].set_xlabel("x [m]")
+    axs[0].set_ylabel("z [m]")
+    plt.draw()
+    plt.savefig(f"{imgs_dir}/{filename.split(sep='.')[0]}_section_w.png", dpi=600)
 
     #axs, edge_x, edge_y, vn, vt = plot.plot_levels(data_vn, 10, label=f"vvec_edge")
     #axs[0].set_aspect("equal")
