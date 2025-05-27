@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore import ibm
 QSCALE = 50
 PEVERY = 1
 
-f_or_p = 'f'
+f_or_p = 'p'
 
 hill_x = 500.0
 hill_y = 500.0
@@ -33,7 +33,7 @@ grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_
 
 
 # -------------------------------------------------------------------------------
-# Serialized data
+# Data
 #
 if f_or_p == 'f':
     savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
@@ -41,12 +41,17 @@ if f_or_p == 'f':
     fortran_files_dir = "/capstor/scratch/cscs/jcanton/plot_data/exclaim_gauss3d.uniform100_hill100x100_Fr022/"
     imgs_dir="runf3_hill100x100_nlev100_Fr022"
 elif f_or_p == 'p':
-    savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
+    #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
+    savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
     #savepoint_path = "/scratch/l_jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
-    run_dir = "/capstor/scratch/cscs/jcanton/icon4py/"
+    #
+    #run_dir = "/capstor/scratch/cscs/jcanton/icon4py/"
+    run_dir = "/scratch/mch/jcanton/icon4py/"
     #run_dir  = "/scratch/l_jcanton/run_data/"
-    run_name = "run03_hill100x100_nlev800/"
-    #run_name = "run10_cube100x100x100_nlev400/"
+    #
+    run_name = "run61_barray_2x2_nlev800_noSlip/"
+    #run_name = "run69_barray_1x0_nlev200_wholeDomain/"
+    #
     imgs_dir=run_name
 
 if not os.path.exists(imgs_dir):
@@ -81,11 +86,10 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     # --- Build 3D points array ---
     # tri.x, tri.y are (num_vertices,)
     points = []
+    cell_centres = np.column_stack((tri.cell_x, tri.cell_y))
+    vertices = np.column_stack((tri.x, tri.y))  # shape (num_vertices, 2)
     for k in range(num_half_levels):
-
-        cell_centres = np.column_stack((tri.cell_x, tri.cell_y))
         z_cells = half_level_heights[:,k]  # shape (num_cells,)
-        vertices = np.column_stack((tri.x, tri.y))  # shape (num_vertices, 2)
         z_verts = griddata(cell_centres, z_cells, vertices, method='linear')
         z_verts_fill = griddata(cell_centres, z_cells, vertices, method='nearest')
         z_verts = np.where(np.isnan(z_verts), z_verts_fill, z_verts)
@@ -171,7 +175,7 @@ elif f_or_p == 'p':
 # Plot
 #
 
-for filename in output_files[:10]:
+for filename in output_files[10:20]:
 
     if f_or_p == 'f':
         if not filename.startswith("exclaim_gauss3d_sb_insta"):
@@ -207,12 +211,12 @@ for filename in output_files[:10]:
     axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
         data=data_w,
         sections_x=[],
-        sections_y=[500],
+        sections_y=[250],
         label="w",
         plot_every=PEVERY,
         qscale=QSCALE,
     )
-    axs[0].plot(x, hill, "--", color="black")
+    #axs[0].plot(x, hill, "--", color="black")
     axs[0].set_aspect("equal")
     axs[0].set_xlabel("x [m]")
     axs[0].set_ylabel("z [m]")
