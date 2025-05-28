@@ -47,8 +47,7 @@ cases = [
     #main_dir + "run69_barray_1x0_nlev200_noSlip/",
     #main_dir + "run69_barray_1x0_nlev200_dirich3/",
     #main_dir + "run69_barray_1x0_nlev200_wholeDomain/",
-    main_dir + "run61_barray_2x2_nlev800/",
-    main_dir + "run61_barray_2x2_nlev800_noSlip/",
+    main_dir + "run61_barray_2x2_nlev800_flatFaces/",
 ]
 output_files = [
     #"end_of_timestep_013600.pkl",
