@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from icon4py.model.common.io import plots
-from icon4py.model.atmosphere.dycore import ibm
 from scipy.interpolate import griddata
 
 # -------------------------------------------------------------------------------
@@ -16,7 +15,8 @@ grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_
 
 #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
 savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
-imgs_dir = "run60_barray_2x2_nlev800"
+#imgs_dir = "run60_barray_2x2_nlev800"
+imgs_dir = "runxx_ibm_check_slip_noslip"
 #savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
 #imgs_dir = "runxx_ibm_check_slip_noslip"
 
@@ -32,7 +32,7 @@ plot = plots.Plot(
 tri = plot.tri
 full_level_heights = plot.full_level_heights
 half_level_heights = plot.half_level_heights
-
+# compute z coordinates for edge centres
 cell_centres = np.column_stack((tri.cell_x, tri.cell_y))
 edges = np.column_stack((tri.edge_x, tri.edge_y))
 full_level_heights_edges = np.zeros((len(tri.edge_x), full_level_heights.shape[1]))
@@ -47,16 +47,18 @@ cases = [
     #main_dir + "run69_barray_1x0_nlev200_noSlip/",
     #main_dir + "run69_barray_1x0_nlev200_dirich3/",
     #main_dir + "run69_barray_1x0_nlev200_wholeDomain/",
-    main_dir + "run60_barray_2x2_nlev800/",
+    main_dir + "run61_barray_2x2_nlev800/",
+    main_dir + "run61_barray_2x2_nlev800_noSlip/",
 ]
 output_files = [
-    #"end_of_timestep_002400.pkl"
-    "end_of_timestep_013600.pkl",
-    "end_of_timestep_013700.pkl",
-    "end_of_timestep_013800.pkl",
-    "end_of_timestep_013900.pkl",
-    "end_of_timestep_014000.pkl",
-    "end_of_timestep_014100.pkl",
+    #"end_of_timestep_013600.pkl",
+    #"end_of_timestep_013700.pkl",
+    #"end_of_timestep_013800.pkl",
+    #"end_of_timestep_013900.pkl",
+    #"end_of_timestep_014000.pkl",
+    #"end_of_timestep_014100.pkl",
+    #
+    "end_of_timestep_033600.pkl"
 ]
 
 # -------------------------------------------------------------------------------
@@ -69,9 +71,12 @@ profiles = [
     #[450, 500],
     #[500, 500],
     #[550, 500],
-    [350, 500],
+    #[350, 500],
     #[500, 500],
     #[560, 500],
+    [250, 250],
+    [350, 250],
+    [500, 250],
 ]
 # compute distances and find coordinates
 for profile in profiles:
@@ -129,7 +134,7 @@ for k, output_file in enumerate(output_files):
     axs[-1, 1].set_xlabel("v_n [m/s]")
     # axs[0,0].set_ylim([-1,Z_TOP])
     #axs[0, 0].set_ylim([0, 50])
-    axs[0, 0].set_ylim([0, 120])
+    axs[0, 0].set_ylim([0, 150])
     # axs[0].legend(fontsize="small")
     plt.draw()
     plt.savefig(imgs_dir + f"/v_profiles_{output_file.split(sep='.')[0]}.png", dpi=600)

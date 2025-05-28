@@ -1,5 +1,6 @@
 import os
 import pickle
+import importlib
 import xarray as xr
 
 import gt4py.next as gtx
@@ -13,7 +14,8 @@ from icon4py.model.atmosphere.dycore import ibm
 QSCALE = 50
 PEVERY = 1
 
-f_or_p = 'p'
+F_OR_P = 'p'
+EXPORT_VTKS = False
 
 hill_x = 500.0
 hill_y = 500.0
@@ -35,12 +37,12 @@ grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_
 # -------------------------------------------------------------------------------
 # Data
 #
-if f_or_p == 'f':
+if F_OR_P == 'f':
     savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
     #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.grid10_uniform100_hill100x100/ser_data/"
     fortran_files_dir = "/capstor/scratch/cscs/jcanton/plot_data/exclaim_gauss3d.uniform100_hill100x100_Fr022/"
     imgs_dir="runf3_hill100x100_nlev100_Fr022"
-elif f_or_p == 'p':
+elif F_OR_P == 'p':
     #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
     savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
     #savepoint_path = "/scratch/l_jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
@@ -49,8 +51,7 @@ elif f_or_p == 'p':
     run_dir = "/scratch/mch/jcanton/icon4py/"
     #run_dir  = "/scratch/l_jcanton/run_data/"
     #
-    run_name = "run61_barray_2x2_nlev800_noSlip/"
-    #run_name = "run69_barray_1x0_nlev200_wholeDomain/"
+    run_name = "run61_barray_2x2_nlev800_flatFaces/"
     #
     imgs_dir=run_name
 
@@ -62,6 +63,7 @@ plot = plots.Plot(
     grid_file_path=grid_file_path,
     backend=gtx.gtfn_cpu,
 )
+importlib.reload(ibm)
 _ibm = ibm.ImmersedBoundaryMethod(
     grid=plot.grid,
     savepoint_path=savepoint_path,
@@ -162,10 +164,10 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
 # -------------------------------------------------------------------------------
 # Load plot data
 
-if f_or_p == 'f':
+if F_OR_P == 'f':
     output_files = os.listdir(fortran_files_dir)
     output_files.sort()
-elif f_or_p == 'p':
+elif F_OR_P == 'p':
     python_files_dir = run_dir + run_name
     output_files = os.listdir(python_files_dir)
     output_files.sort()
@@ -175,16 +177,16 @@ elif f_or_p == 'p':
 # Plot
 #
 
-for filename in output_files[10:20]:
+for filename in output_files:
 
-    if f_or_p == 'f':
+    if F_OR_P == 'f':
         if not filename.startswith("exclaim_gauss3d_sb_insta"):
             continue
         ds = xr.open_dataset(fortran_files_dir + filename)
         data_w  = ds.w.values[0,:,:].T
         data_vn = ds.vn.values[0,:,:].T
 
-    elif f_or_p == 'p':
+    elif F_OR_P == 'p':
         if not filename.endswith(".pkl"):
             continue
         with open(python_files_dir + filename, "rb") as f:
@@ -194,19 +196,20 @@ for filename in output_files[10:20]:
 
     print(f"Plotting {filename}")
 
-    u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
-    w_cf = plot._scal_interpolate_to_full_levels(data_w)
-    export_vtk(
-        tri=plot.tri,
-        half_level_heights=plot.half_level_heights,
-        filename=f"{imgs_dir}/{filename.split(sep='.')[0]}.vtu",
-        data={
-            #"vn": data_vn,
-            "w": data_w,
-            "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
-            "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float),
-        }
-    )
+    if EXPORT_VTKS:
+        u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
+        w_cf = plot._scal_interpolate_to_full_levels(data_w)
+        export_vtk(
+            tri=plot.tri,
+            half_level_heights=plot.half_level_heights,
+            filename=f"{imgs_dir}/{filename.split(sep='.')[0]}.vtu",
+            data={
+                #"vn": data_vn,
+                "w": data_w,
+                "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
+                "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float),
+            }
+        )
 
     axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
         data=data_w,
