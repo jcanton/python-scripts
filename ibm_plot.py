@@ -1,4 +1,4 @@
-import os
+import os, glob
 import pickle
 import importlib
 import xarray as xr
@@ -15,7 +15,7 @@ QSCALE = 50
 PEVERY = 1
 
 F_OR_P = 'p'
-EXPORT_VTKS = False
+EXPORT_VTKS = True
 
 hill_x = 500.0
 hill_y = 500.0
@@ -38,20 +38,24 @@ grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_
 # Data
 #
 if F_OR_P == 'f':
-    savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
+    #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
     #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.grid10_uniform100_hill100x100/ser_data/"
-    fortran_files_dir = "/capstor/scratch/cscs/jcanton/plot_data/exclaim_gauss3d.uniform100_hill100x100_Fr022/"
-    imgs_dir="runf3_hill100x100_nlev100_Fr022"
+    #fortran_files_dir = "/capstor/scratch/cscs/jcanton/plot_data/exclaim_gauss3d.uniform100_hill100x100_Fr022/"
+    #imgs_dir="runf3_hill100x100_nlev100_Fr022"
+    savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
+    fortran_files_dir = "/scratch/mch/jcanton/icon-exclaim/icon-exclaim/build_acc/experiments/exclaim_gauss3d.uniform100_hill100x100/"
+    imgs_dir="runf1_hill100x100_nlev100"
 elif F_OR_P == 'p':
     #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
-    savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
+    savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
     #savepoint_path = "/scratch/l_jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
     #
     #run_dir = "/capstor/scratch/cscs/jcanton/icon4py/"
     run_dir = "/scratch/mch/jcanton/icon4py/"
     #run_dir  = "/scratch/l_jcanton/run_data/"
     #
-    run_name = "run61_barray_2x2_nlev800_flatFaces/"
+    run_name = "run01_hill100x100_nlev200/"
+    #run_name = "run61_barray_2x2_nlev200_flatFaces/"
     #
     imgs_dir=run_name
 
@@ -165,34 +169,39 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
 # Load plot data
 
 if F_OR_P == 'f':
-    output_files = os.listdir(fortran_files_dir)
+    output_files = glob.glob(os.path.join(fortran_files_dir, 'exclaim_gauss3d_sb_insta*.nc'))
     output_files.sort()
 elif F_OR_P == 'p':
     python_files_dir = run_dir + run_name
-    output_files = os.listdir(python_files_dir)
+    output_files = glob.glob(os.path.join(python_files_dir, 'end_of_timestep_*.pkl'))
     output_files.sort()
 
+fileLabel = lambda file_path: file_path.split('/')[-1].split('.')[0]
 
 # -------------------------------------------------------------------------------
 # Plot
 #
 
-for filename in output_files:
+for file_path in output_files[0:60]:
+
+    filename = fileLabel(file_path)
 
     if F_OR_P == 'f':
-        if not filename.startswith("exclaim_gauss3d_sb_insta"):
-            continue
-        ds = xr.open_dataset(fortran_files_dir + filename)
-        data_w  = ds.w.values[0,:,:].T
-        data_vn = ds.vn.values[0,:,:].T
+        ds = xr.open_dataset(file_path)
+        data_rho     = ds.rho.values[0,:,:].T
+        data_theta_v = ds.theta_v.values[0,:,:].T
+        data_exner   = ds.pres.values[0,:,:].T
+        data_w       = ds.w.values[0,:,:].T
+        data_vn      = ds.vn.values[0,:,:].T
 
     elif F_OR_P == 'p':
-        if not filename.endswith(".pkl"):
-            continue
-        with open(python_files_dir + filename, "rb") as f:
+        with open(file_path, "rb") as f:
             state = pickle.load(f)
-        data_w  = state['w']
-        data_vn = state['vn']
+        data_rho     = state["rho"],
+        data_theta_v = state["theta_v"],
+        data_exner   = state["exner"],
+        data_w       = state['w']
+        data_vn      = state['vn']
 
     print(f"Plotting {filename}")
 
@@ -202,8 +211,11 @@ for filename in output_files:
         export_vtk(
             tri=plot.tri,
             half_level_heights=plot.half_level_heights,
-            filename=f"{imgs_dir}/{filename.split(sep='.')[0]}.vtu",
+            filename=f"{imgs_dir}/{filename}.vtu",
             data={
+                "rho":     data_rho,
+                "theta_v": data_theta_v,
+                "exner":   data_exner,
                 #"vn": data_vn,
                 "w": data_w,
                 "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
@@ -211,22 +223,23 @@ for filename in output_files:
             }
         )
 
-    axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
-        data=data_w,
-        sections_x=[],
-        sections_y=[250],
-        label="w",
-        plot_every=PEVERY,
-        qscale=QSCALE,
-    )
-    #axs[0].plot(x, hill, "--", color="black")
-    axs[0].set_aspect("equal")
-    axs[0].set_xlabel("x [m]")
-    axs[0].set_ylabel("z [m]")
-    plt.draw()
-    plt.savefig(f"{imgs_dir}/{filename.split(sep='.')[0]}_section_w.png", dpi=600)
+    else:
+        axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
+            data=data_w,
+            sections_x=[],
+            sections_y=[250],
+            label="w",
+            plot_every=PEVERY,
+            qscale=QSCALE,
+        )
+        #axs[0].plot(x, hill, "--", color="black")
+        axs[0].set_aspect("equal")
+        axs[0].set_xlabel("x [m]")
+        axs[0].set_ylabel("z [m]")
+        plt.draw()
+        plt.savefig(f"{imgs_dir}/{filename}_section_w.png", dpi=600)
 
-    #axs, edge_x, edge_y, vn, vt = plot.plot_levels(data_vn, 10, label=f"vvec_edge")
-    #axs[0].set_aspect("equal")
-    #plt.draw()
-    #plt.savefig(f"{imgs_dir}/{filename[:-4]}_levels_uv.png", dpi=600)
+        #axs, edge_x, edge_y, vn, vt = plot.plot_levels(data_vn, 10, label=f"vvec_edge")
+        #axs[0].set_aspect("equal")
+        #plt.draw()
+        #plt.savefig(f"{imgs_dir}/{filename}_levels_uv.png", dpi=600)
