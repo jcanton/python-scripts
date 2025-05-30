@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 
 # constants
 kappa    = 0.4 # Von Karman constant
-H        = 1.0 # building height
+H        = 100.0 # building height
 lambda_f = 0.16 # frontal area index
 
 # lambda_f - dependent
-u_H    = 1.0       # free-stream velocity at building height (table 1)
+u_H    = 0.5       # free-stream velocity at building height (table 1)
 a      = 1.32      # attenuation coefficient (table 1)
-z_w    = H * 2.7   # wake height (table 2)
+z_w    = H * 1.5   # wake height (table 2)
 u_star = u_H / 4.4 # friction velocity (tables 1 and 2)
 d      = 0.32  * H # displacement height (table 2)
 z0     = 0.084 * H # roughness height (table 2)
@@ -29,7 +29,7 @@ eq01 = lambda z: u_star / kappa * np.log((z - d) / z0)
 
 
 # plot
-z = np.linspace(0, 8, 100)
+z = np.linspace(0, 500, 100)
 
 z07 = z[np.where(z<=H)[0]]
 z26 = z[np.where(z>=z07[-1])[0]]; z26 = z26[np.where(z26<=z_w)[0]]
