@@ -47,15 +47,18 @@ if F_OR_P == 'f':
     imgs_dir="runf1_hill100x100_nlev100"
 elif F_OR_P == 'p':
     #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
-    savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
+    savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
     #savepoint_path = "/scratch/l_jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
     #
     #run_dir = "/capstor/scratch/cscs/jcanton/icon4py/"
     run_dir = "/scratch/mch/jcanton/icon4py/"
     #run_dir  = "/scratch/l_jcanton/run_data/"
     #
-    run_name = "run01_hill100x100_nlev200/"
-    #run_name = "run61_barray_2x2_nlev200_flatFaces/"
+    #run_name = "run01_hill100x100_nlev200/"
+    run_name = "run61_barray_2x2_nlev800_flatFaces/"
+    #
+    savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
+    run_name = "run80_hill_bx5_nlev100/"
     #
     imgs_dir=run_name
 
@@ -93,9 +96,9 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     # tri.x, tri.y are (num_vertices,)
     points = []
     cell_centres = np.column_stack((tri.cell_x, tri.cell_y))
-    vertices = np.column_stack((tri.x, tri.y))  # shape (num_vertices, 2)
+    vertices = np.column_stack((tri.x, tri.y))
     for k in range(num_half_levels):
-        z_cells = half_level_heights[:,k]  # shape (num_cells,)
+        z_cells = half_level_heights[:,k]
         z_verts = griddata(cell_centres, z_cells, vertices, method='linear')
         z_verts_fill = griddata(cell_centres, z_cells, vertices, method='nearest')
         z_verts = np.where(np.isnan(z_verts), z_verts_fill, z_verts)
@@ -108,7 +111,7 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     wedges = []
     unmasked_cell_indices = []
     mask = getattr(tri, 'mask', None)
-    for cell_id, (v0, v1, v2) in enumerate(tri.triangles):  # tri.triangles: (num_cells, 3)
+    for cell_id, (v0, v1, v2) in enumerate(tri.triangles):
         if mask is not None and mask[cell_id]:
             continue  # skip masked triangles
         unmasked_cell_indices.append(cell_id)
@@ -182,7 +185,7 @@ fileLabel = lambda file_path: file_path.split('/')[-1].split('.')[0]
 # Plot
 #
 
-for file_path in output_files[0:60]:
+for file_path in output_files:
 
     filename = fileLabel(file_path)
 
@@ -197,9 +200,9 @@ for file_path in output_files[0:60]:
     elif F_OR_P == 'p':
         with open(file_path, "rb") as f:
             state = pickle.load(f)
-        data_rho     = state["rho"],
-        data_theta_v = state["theta_v"],
-        data_exner   = state["exner"],
+        data_rho     = state["rho"]
+        data_theta_v = state["theta_v"]
+        data_exner   = state["exner"]
         data_w       = state['w']
         data_vn      = state['vn']
 
@@ -223,23 +226,22 @@ for file_path in output_files[0:60]:
             }
         )
 
-    else:
-        axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
-            data=data_w,
-            sections_x=[],
-            sections_y=[250],
-            label="w",
-            plot_every=PEVERY,
-            qscale=QSCALE,
-        )
-        #axs[0].plot(x, hill, "--", color="black")
-        axs[0].set_aspect("equal")
-        axs[0].set_xlabel("x [m]")
-        axs[0].set_ylabel("z [m]")
-        plt.draw()
-        plt.savefig(f"{imgs_dir}/{filename}_section_w.png", dpi=600)
+    axs, x_coords_i, y_coords_i, u_i, w_i, idxs = plot.plot_sections(
+        data=data_w,
+        sections_x=[],
+        sections_y=[500],
+        label="w",
+        plot_every=PEVERY,
+        qscale=QSCALE,
+    )
+    #axs[0].plot(x, hill, "--", color="black")
+    axs[0].set_aspect("equal")
+    axs[0].set_xlabel("x [m]")
+    axs[0].set_ylabel("z [m]")
+    plt.draw()
+    plt.savefig(f"{imgs_dir}/{filename}_section_w.png", dpi=600)
 
-        #axs, edge_x, edge_y, vn, vt = plot.plot_levels(data_vn, 10, label=f"vvec_edge")
-        #axs[0].set_aspect("equal")
-        #plt.draw()
-        #plt.savefig(f"{imgs_dir}/{filename}_levels_uv.png", dpi=600)
+    #axs, edge_x, edge_y, vn, vt = plot.plot_levels(data_vn, 10, label=f"vvec_edge")
+    #axs[0].set_aspect("equal")
+    #plt.draw()
+    #plt.savefig(f"{imgs_dir}/{filename}_levels_uv.png", dpi=600)

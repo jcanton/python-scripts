@@ -16,13 +16,9 @@ grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_
 #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
 savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
 #imgs_dir = "run60_barray_2x2_nlev800"
-imgs_dir = "runxx_ibm_check_slip_noslip"
+#imgs_dir = "runxx_ibm_check_slip_noslip"
 #savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
 #imgs_dir = "runxx_ibm_check_slip_noslip"
-
-
-if not os.path.exists(imgs_dir):
-    os.makedirs(imgs_dir)
 
 plot = plots.Plot(
     savepoint_path=savepoint_path,
@@ -43,12 +39,10 @@ for k in range(full_level_heights.shape[1]):
     full_level_heights_edges[:,k] = np.where(np.isnan(z_edges), z_edges_fill, z_edges)
 
 cases = [
-    #main_dir + "run69_barray_1x0_nlev200/",
-    #main_dir + "run69_barray_1x0_nlev200_noSlip/",
-    #main_dir + "run69_barray_1x0_nlev200_dirich3/",
-    #main_dir + "run69_barray_1x0_nlev200_wholeDomain/",
-    main_dir + "run61_barray_2x2_nlev200_flatFaces/",
+    #main_dir + "run61_barray_2x2_nlev800_flatFaces/",
+    main_dir + "run62_barray_4x4_nlev200_flatFaces/",
 ]
+imgs_dir=cases[0].split('/')[-2]
 output_files = [
     #"end_of_timestep_013600.pkl",
     #"end_of_timestep_013700.pkl",
@@ -58,9 +52,13 @@ output_files = [
     #"end_of_timestep_014100.pkl",
     #
     #"end_of_timestep_033600.pkl"
-    #"avg_state_end_of_timestep_036600-end_of_timestep_358200.pkl" # run61_barray_2x2_nlev800_flatFaces
-    "avg_state_end_of_timestep_036600-end_of_timestep_514200.pkl" # run61_barray_2x2_nlev800_noSlip
+    "avg_state_end_of_timestep_036000-end_of_timestep_180000.pkl",
+    "avg_state_end_of_timestep_180000-end_of_timestep_324000.pkl",
 ]
+mac_data=np.loadtxt('macdonald_2000_cube_arrays.csv', delimiter=',', skiprows=2)
+
+if not os.path.exists(imgs_dir):
+    os.makedirs(imgs_dir)
 
 # -------------------------------------------------------------------------------
 # vert profiles
@@ -68,17 +66,17 @@ output_files = [
 markers = ["+", "x", "d", "o"]
 linestyles = ["-", "--", ":", "-."]
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-profiles = [
-    #[450, 500],
-    #[500, 500],
-    #[550, 500],
-    [350, 500],
-    #[500, 500],
-    #[560, 500],
-    #[250, 250],
-    #[350, 250],
-    #[500, 250],
-]
+if "2x2" in cases[0]:
+    exp_data = [mac_data[:,0:2]]
+    profiles = [ [350, 500] ]
+elif "4x4" in cases[0]:
+    exp_data = [mac_data[:,2:4],mac_data[:,4:]]
+    profiles = [ [225, 250] ]
+else:
+    exp_data = []
+    profiles = []
+    print("no automatic case selected")
+
 # compute distances and find coordinates
 for profile in profiles:
     cell_dist = np.sqrt( (tri.cell_x - profile[0])**2 + (tri.cell_y - profile[1])**2 )
@@ -93,7 +91,7 @@ for k, output_file in enumerate(output_files):
 
     fig = plt.figure(1, figsize=(8, 12)); plt.clf()
     plt.show(block=False)
-    axs = fig.subplots(nrows=len(profiles), ncols=4, sharex='col', sharey=True, squeeze=False)
+    axs = fig.subplots(nrows=len(profiles), ncols=2, sharex='col', sharey=True, squeeze=False)
     
     for i, profile in enumerate(profiles):
     
@@ -101,9 +99,10 @@ for k, output_file in enumerate(output_files):
         edge_id = profile[3]
     
         axs[i, 0].set_title(f"(x,y) = ({tri.cell_x[cell_id]:.1f}, {tri.cell_y[cell_id]:.1f})m")
-        axs[i, 1].set_title(f"(x,y) = ({tri.edge_x[edge_id]:.1f}, {tri.edge_y[edge_id]:.1f})m")
-        axs[i, 2].set_title(f"(x,y) = ({tri.edge_x[edge_id]:.1f}, {tri.edge_y[edge_id]:.1f})m")
-        axs[i, 3].set_title(f"(x,y) = ({tri.cell_x[cell_id]:.1f}, {tri.cell_y[cell_id]:.1f})m")
+        #axs[i, 1].set_title(f"(x,y) = ({tri.edge_x[edge_id]:.1f}, {tri.edge_y[edge_id]:.1f})m")
+        #axs[i, 2].set_title(f"(x,y) = ({tri.edge_x[edge_id]:.1f}, {tri.edge_y[edge_id]:.1f})m")
+        #axs[i, 3].set_title(f"(x,y) = ({tri.cell_x[cell_id]:.1f}, {tri.cell_y[cell_id]:.1f})m")
+        axs[i, 1].set_title(f"(x,y) = ({tri.cell_x[cell_id]:.1f}, {tri.cell_y[cell_id]:.1f})m")
     
         for j, case in enumerate(cases):
     
@@ -124,44 +123,67 @@ for k, output_file in enumerate(output_files):
                 markevery=1,
                 ms=1,
             )
+            #axs[i, 1].plot(
+            #    data_vn[edge_id, :],
+            #    full_level_heights_edges[edge_id, :],
+            #    color=colors[j],
+            #    linestyle=linestyles[j],
+            #    marker=markers[j],
+            #    markevery=1,
+            #    ms=1,
+            #)
+            #axs[i, 2].plot(
+            #    data_vn[edge_id, :]*plot.primal_normal[0][edge_id] + data_vt[edge_id, :]*plot.primal_normal[0][edge_id],
+            #    full_level_heights_edges[edge_id, :],
+            #    color=colors[j],
+            #    linestyle=linestyles[j],
+            #    marker=markers[j],
+            #    markevery=1,
+            #    ms=1,
+            #)
+            #axs[i, 3].plot(
+            #    data_u_cf[cell_id, :],
+            #    full_level_heights[cell_id, :],
+            #    color=colors[j],
+            #    linestyle=linestyles[j],
+            #    marker=markers[j],
+            #    markevery=1,
+            #    ms=1,
+            #)
             axs[i, 1].plot(
-                data_vn[edge_id, :],
-                full_level_heights_edges[edge_id, :],
+                (data_u_cf[cell_id, :-1] + data_u_cf[cell_id, 1:])/2,
+                half_level_heights[cell_id, 1:-1],
                 color=colors[j],
                 linestyle=linestyles[j],
                 marker=markers[j],
                 markevery=1,
                 ms=1,
             )
-            axs[i, 2].plot(
-                data_vn[edge_id, :]*plot.primal_normal[0][edge_id] + data_vt[edge_id, :]*plot.primal_normal[0][edge_id],
-                full_level_heights_edges[edge_id, :],
-                color=colors[j],
-                linestyle=linestyles[j],
-                marker=markers[j],
-                markevery=1,
-                ms=1,
-            )
-            axs[i, 3].plot(
-                data_u_cf[cell_id, :],
-                full_level_heights[cell_id, :],
-                color=colors[j],
-                linestyle=linestyles[j],
-                marker=markers[j],
-                markevery=1,
-                ms=1,
-            )
+            for iexp, expp in enumerate(exp_data):
+                axs[i, 1].plot(
+                    expp[:,0] / 2,
+                    expp[:,1] * 100,
+                    color='black',
+                    linestyle='',
+                    marker=markers[iexp],
+                    markevery=1,
+                    ms=4,
+                )
     
         axs[i, 0].set_ylabel("z [m]")
     
     axs[-1, 0].set_xlabel("w   [m/s]")
-    axs[-1, 1].set_xlabel("v_n [m/s]")
-    axs[-1, 2].set_xlabel("u_e [m/s]")
-    axs[-1, 3].set_xlabel("u_c [m/s]")
+    #axs[-1, 1].set_xlabel("v_n [m/s]")
+    #axs[-1, 2].set_xlabel("u_e [m/s]")
+    #axs[-1, 3].set_xlabel("u_c [m/s]")
+    axs[-1, 1].set_xlabel("u_c [m/s]")
     # axs[0,0].set_ylim([-1,Z_TOP])
     #axs[0, 0].set_ylim([0, 50])
-    axs[0, 0].set_ylim([0, 500])
     # axs[0].legend(fontsize="small")
-    plt.draw()
-    plt.savefig(imgs_dir + f"/v_profiles_{output_file.split(sep='.')[0]}.png", dpi=600)
+    axs[0, 0].set_ylim([0, 500]); plt.draw()
+    plt.savefig(imgs_dir + f"/v_profiles_{output_file.split(sep='.')[0]}_500m_exp.png", dpi=600)
+    axs[0, 0].set_ylim([0, 300]); plt.draw()
+    plt.savefig(imgs_dir + f"/v_profiles_{output_file.split(sep='.')[0]}_300m_exp.png", dpi=600)
+    axs[0, 0].set_ylim([0, 150]); plt.draw()
+    plt.savefig(imgs_dir + f"/v_profiles_{output_file.split(sep='.')[0]}_150m_exp.png", dpi=600)
 
