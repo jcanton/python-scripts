@@ -15,7 +15,7 @@ QSCALE = 50
 PEVERY = 1
 
 F_OR_P = 'p'
-EXPORT_VTKS = True
+EXPORT_VTKS = False
 
 hill_x = 500.0
 hill_y = 500.0
@@ -54,11 +54,11 @@ elif F_OR_P == 'p':
     run_dir = "/scratch/mch/jcanton/icon4py/"
     #run_dir  = "/scratch/l_jcanton/run_data/"
     #
-    #run_name = "run01_hill100x100_nlev200/"
-    run_name = "run61_barray_2x2_nlev800_flatFaces/"
+    run_name = "run03_hill100x100_nlev800/"
+    #run_name = "run61_barray_2x2_nlev800_flatFaces/"
     #
-    savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
-    run_name = "run80_hill_bx5_nlev100/"
+    #savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
+    #run_name = "run80_hill_bx5_nlev100/"
     #
     imgs_dir=run_name
 
