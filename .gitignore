@@ -3,6 +3,8 @@ imgs*
 *.png
 testdata
 run*
+icon_grid*
+icon_extpar*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
