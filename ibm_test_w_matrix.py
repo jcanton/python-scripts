@@ -1,6 +1,7 @@
 import os, pickle
 import numpy as np
-import scipy as sp
+import matplotlib as mpl
+mpl.use('tkagg')
 import matplotlib.pyplot as plt
 
 icon4py_dir = os.path.join(os.getcwd(), "../icon4py")
@@ -19,16 +20,15 @@ def tridiag(
     z_q,
     dtime,
     cpd,
-    ibm_cells,
+    ibm_cells = [0],
+    n_ibm = 5,
+    modify_matrix_loop = 1,
 ):
-
-    jc = ibm_cells
+    #jc = np.array(ibm_cells)
+    jc = ibm_cells  # for now only one cell is supported
 
     ncells=theta_v_ic.shape[0]
     nlev=theta_v_ic.shape[1] - 1
-
-    n_ibm = 5
-    modify_matrix_loop = 1
 
     if modify_matrix_loop == 1:
         # apply IBM method modifying the matrix and solving the entire column
@@ -37,7 +37,7 @@ def tridiag(
         column_end = nlev
     elif modify_matrix_loop == 2:
         # reduce the depth of the column to the new surface
-        column_end = nlev - n_ibm
+        column_end = nlev - n_ibm + 1
     else:
         # do not edit the matrix, solve the entire column
         column_end = nlev
@@ -56,7 +56,7 @@ def tridiag(
 
         d = z_w_expl[jc,jk] - gamma * (z_exner_expl[jc,jk-1] - z_exner_expl[jc,jk])
 
-        print(f"a: {a}, b: {b}, c: {c}, d: {d}")
+        #print(f"a: {a}, b: {b}, c: {c}, d: {d}")
 
         w[jc,jk] = (d - a * w[jc,jk-1]) * g
 
@@ -68,16 +68,6 @@ def tridiag(
 #-------------------------------------------------------------------------------
 # Load data
 #
-
-fname = os.path.join(icon4py_dir, "runxx_w_tests", f"init_cond.pkl")
-with open(fname, "rb") as ifile:
-    state = pickle.load(ifile)
-w_ini = state["w"]
-
-fname = os.path.join(icon4py_dir, "runxx_w_tests", f"end_of_timestep_c_000000.pkl")
-with open(fname, "rb") as ifile:
-    state = pickle.load(ifile)
-w_end_c = state["w"]
 
 fname = os.path.join(icon4py_dir, "runxx_w_tests", f"w_matrix_c.pkl")
 with open(fname, "rb") as ifile:
@@ -99,7 +89,19 @@ cpd = state["cpd"]
 #-------------------------------------------------------------------------------
 # Solve system
 #
+n_ibm = 5
 ibm_cells = 13
-w = tridiag( vwind_impl_wgt, theta_v_ic, ddqz_z_half, z_alpha, z_beta, z_w_expl, z_exner_expl, z_q, dtime, cpd, ibm_cells)
 
-print((w[ibm_cells,:] - w_ref[ibm_cells,:]))
+modify_matrix_loop = 1
+w_1 = tridiag( vwind_impl_wgt, theta_v_ic, ddqz_z_half, z_alpha, z_beta, z_w_expl, z_exner_expl, z_q, dtime, cpd, ibm_cells, n_ibm, modify_matrix_loop)
+modify_matrix_loop = 2
+w_2 = tridiag( vwind_impl_wgt, theta_v_ic, ddqz_z_half, z_alpha, z_beta, z_w_expl, z_exner_expl, z_q, dtime, cpd, ibm_cells, n_ibm, modify_matrix_loop)
+
+#-------------------------------------------------------------------------------
+# Plot results
+#
+fig = plt.figure(1); plt.clf(); plt.show(block=False)
+plt.plot(w_1[ibm_cells, :])
+plt.plot(w_2[ibm_cells, :], '--')
+plt.draw()
+print((w_1[ibm_cells,:] - w_2[ibm_cells,:]))
