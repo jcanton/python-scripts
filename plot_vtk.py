@@ -6,6 +6,7 @@ from scipy.interpolate import griddata
 import gt4py.next as gtx
 from icon4py.model.common.io import plots
 from icon4py.model.atmosphere.dycore import ibm
+from concurrent.futures import ProcessPoolExecutor
 
 
 # -------------------------------------------------------------------------------
@@ -96,26 +97,19 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     )
     meshio.write(filename, mesh, file_format="vtu")
 
-# ===============================================================================
-if __name__ == "__main__":
+def process_file(args):
+    # NOTE: plot and _ibm must be created in each process, as they are not picklable.
+    file_path, out_path, savepoint_path, grid_file_path = args
+    if os.path.exists(out_path):
+        return  # Skip if already processed
 
-    if len(sys.argv) < 4:
-        print("Usage: python plot_vtk.py <python_files_dir> <savepoint_path> <grid_file_path>")
-        sys.exit(1)
-    output_files_dir = sys.argv[1]
-    savepoint_path = sys.argv[2]
-    grid_file_path = sys.argv[3]
-
-    vtks_dir = os.path.join(output_files_dir, 'vtks')
-    if not os.path.exists(vtks_dir):
-        os.makedirs(vtks_dir)
-
-    output_files = glob.glob(os.path.join(output_files_dir, 'end_of_timestep_*.pkl'))
-    output_files.sort()
-
-    print(f"Found {len(output_files)} output files in {output_files_dir}")
-
-    fileLabel = lambda file_path: file_path.split('/')[-1].split('.')[0]
+    with open(file_path, "rb") as f:
+        state = pickle.load(f)
+    data_rho     = state["rho"]
+    data_theta_v = state["theta_v"]
+    data_exner   = state["exner"]
+    data_w       = state['w']
+    data_vn      = state['vn']
 
     plot = plots.Plot(
         savepoint_path=savepoint_path,
@@ -129,38 +123,55 @@ if __name__ == "__main__":
         backend=gtx.gtfn_cpu,
     )
 
+    filename = os.path.basename(file_path).split('.')[0]
+    print(f"Plotting {filename}")
+
+    u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
+    w_cf = plot._scal_interpolate_to_full_levels(data_w)
+    export_vtk(
+        tri=plot.tri,
+        half_level_heights=plot.half_level_heights,
+        filename=out_path,
+        data={
+            "rho":     data_rho,
+            "theta_v": data_theta_v,
+            "exner":   data_exner,
+            #"vn": data_vn,
+            "w": data_w,
+            "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
+            "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float),
+        }
+    )
+
+# ===============================================================================
+if __name__ == "__main__":
+
+    if len(sys.argv) < 5:
+        print("Usage: python plot_vtk.py <num_workers> <python_files_dir> <savepoint_path> <grid_file_path>")
+        sys.exit(1)
+    num_workers = int(sys.argv[1])
+    output_files_dir = sys.argv[2]
+    savepoint_path = sys.argv[3]
+    grid_file_path = sys.argv[4]
+
+    vtks_dir = os.path.join(output_files_dir, 'vtks')
+    if not os.path.exists(vtks_dir):
+        os.makedirs(vtks_dir)
+
+    output_files = glob.glob(os.path.join(output_files_dir, 'end_of_timestep_*.pkl'))
+    output_files.sort()
+
+    print(f"Found {len(output_files)} output files in {output_files_dir}")
+
+    fileLabel = lambda file_path: file_path.split('/')[-1].split('.')[0]
+
+    # Prepare arguments for each file
+    tasks = []
     for file_path in output_files:
-    
         filename = fileLabel(file_path)
         out_path = os.path.join(vtks_dir, f"{filename}.vtu")
+        tasks.append((file_path, out_path, savepoint_path, grid_file_path))
 
-        if os.path.exists(out_path):
-            continue  # Skip if already processed
-    
-        with open(file_path, "rb") as f:
-            state = pickle.load(f)
-        data_rho     = state["rho"]
-        data_theta_v = state["theta_v"]
-        data_exner   = state["exner"]
-        data_w       = state['w']
-        data_vn      = state['vn']
-    
-        print(f"Plotting {filename}")
-    
-        u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
-        w_cf = plot._scal_interpolate_to_full_levels(data_w)
-        export_vtk(
-            tri=plot.tri,
-            half_level_heights=plot.half_level_heights,
-            filename=out_path,
-            data={
-                "rho":     data_rho,
-                "theta_v": data_theta_v,
-                "exner":   data_exner,
-                #"vn": data_vn,
-                "w": data_w,
-                "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
-                "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float),
-            }
-        )
-    
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        list(executor.map(process_file, tasks))
+
