@@ -7,6 +7,7 @@ import gt4py.next as gtx
 import matplotlib.pyplot as plt
 import numpy as np
 
+from plot_vtk import export_vtk
 
 from icon4py.model.common.io import plots
 from icon4py.model.atmosphere.dycore import ibm
@@ -15,7 +16,7 @@ QSCALE = 50
 PEVERY = 1
 
 F_OR_P = 'p'
-EXPORT_VTKS = False
+EXPORT_VTKS = True
 
 hill_x = 500.0
 hill_y = 500.0
@@ -46,19 +47,11 @@ if F_OR_P == 'f':
     fortran_files_dir = "/scratch/mch/jcanton/icon-exclaim/icon-exclaim/build_acc/experiments/exclaim_gauss3d.uniform100_hill100x100/"
     imgs_dir="runf1_hill100x100_nlev100"
 elif F_OR_P == 'p':
-    #savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
-    savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
-    #savepoint_path = "/scratch/l_jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
+    savepoint_path = os.path.join(os.environ["SCRATCH"], "ser_data/exclaim_gauss3d.uniform100_flat/ser_data/")
+    run_dir = os.path.join(os.environ["SCRATCH"], "icon4py/")
     #
-    #run_dir = "/capstor/scratch/cscs/jcanton/icon4py/"
-    run_dir = "/scratch/mch/jcanton/icon4py/"
-    #run_dir  = "/scratch/l_jcanton/run_data/"
-    #
-    run_name = "run03_hill100x100_nlev800/"
-    #run_name = "run61_barray_2x2_nlev800_flatFaces/"
-    #
-    #savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform100_hill100x100/ser_data/"
-    #run_name = "run80_hill_bx5_nlev100/"
+    #run_name = "run03_hill100x100_nlev800/"
+    run_name = "run62_barray_4x4_nlev800_pert/"
     #
     imgs_dir=run_name
 
@@ -77,96 +70,6 @@ _ibm = ibm.ImmersedBoundaryMethod(
     grid_file_path=grid_file_path,
     backend=gtx.gtfn_cpu,
 )
-
-# -------------------------------------------------------------------------------
-#
-def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
-    """
-    Export data to a VTK UnstructuredGrid (.vtu, binary) file for ParaView/VisIt.
-    Assumes a triangular grid extruded in z to form VTK_WEDGE cells.
-    """
-    import meshio
-    from scipy.interpolate import griddata
-
-    num_vertices = len(tri.x)
-    num_cells = len(tri.cell_x)
-    num_half_levels = half_level_heights.shape[1]
-
-    # --- Build 3D points array ---
-    # tri.x, tri.y are (num_vertices,)
-    points = []
-    cell_centres = np.column_stack((tri.cell_x, tri.cell_y))
-    vertices = np.column_stack((tri.x, tri.y))
-    for k in range(num_half_levels):
-        z_cells = half_level_heights[:,k]
-        z_verts = griddata(cell_centres, z_cells, vertices, method='linear')
-        z_verts_fill = griddata(cell_centres, z_cells, vertices, method='nearest')
-        z_verts = np.where(np.isnan(z_verts), z_verts_fill, z_verts)
-        for i in range(num_vertices):
-            points.append([tri.x[i], tri.y[i], z_verts[i]])
-    points = np.array(points)
-
-    # --- Build wedge cells ---
-    # Each wedge is formed by connecting a triangle at level k and k+1
-    wedges = []
-    unmasked_cell_indices = []
-    mask = getattr(tri, 'mask', None)
-    for cell_id, (v0, v1, v2) in enumerate(tri.triangles):
-        if mask is not None and mask[cell_id]:
-            continue  # skip masked triangles
-        unmasked_cell_indices.append(cell_id)
-        for k in range(num_half_levels - 1):
-            # Compute global vertex indices for bottom and top triangles
-            v0b = v0 + k * num_vertices
-            v1b = v1 + k * num_vertices
-            v2b = v2 + k * num_vertices
-            v0t = v0 + (k + 1) * num_vertices
-            v1t = v1 + (k + 1) * num_vertices
-            v2t = v2 + (k + 1) * num_vertices
-            # VTK_WEDGE: [v0b, v1b, v2b, v0t, v1t, v2t]
-            wedges.append([v0b, v1b, v2b, v0t, v1t, v2t])
-    cells = [("wedge", np.array(wedges))]
-
-    # --- Prepare data arrays ---
-    point_data = {}
-    cell_data = {}
-    for name, arr in data.items():
-        arr = np.ascontiguousarray(arr)
-        if arr.shape[0] == num_vertices:  # vertex data
-            # Flatten to (num_vertices * num_half_levels,)
-            point_data[name] = arr.flatten()
-        elif arr.shape[0] == num_cells:  # cell-centered data
-            # Only include unmasked cells
-            arr_unmasked = arr[unmasked_cell_indices, :]
-            # Handle vector fields (shape: (num_cells, num_levels, 3))
-            if arr_unmasked.ndim == 3 and arr_unmasked.shape[2] == 3:
-                # Data defined on full levels (wedge centers)
-                arr3d = arr_unmasked[:, :, :]
-                # Flatten to (num_cells * num_levels, 3)
-                cell_data[name] = [arr3d.reshape(-1, 3)]
-            elif arr_unmasked.ndim == 2:
-                if arr_unmasked.shape[1] == num_half_levels-1:
-                    # Data defined on full levels (wedge centers)
-                    arr3d = arr_unmasked[:, :]
-                else:
-                    # Data defined on half levels (wedge triangular faces)
-                    # For now, we remove the last (ground) half level
-                    # and plot it at wedge centers
-                    arr3d = arr_unmasked[:, :-1]
-                cell_data[name] = [arr3d.flatten()]
-            else:
-                raise ValueError(f"Unsupported cell data shape for '{name}': {arr.shape}")
-        else:
-            raise ValueError(f"Unsupported data shape for '{name}': {arr.shape}")
-
-    # --- Write to VTU ---
-    mesh = meshio.Mesh(
-        points=points,
-        cells=cells,
-        point_data=point_data,
-        cell_data=cell_data,
-    )
-    meshio.write(filename, mesh, file_format="vtu")
 
 # -------------------------------------------------------------------------------
 # Load plot data
