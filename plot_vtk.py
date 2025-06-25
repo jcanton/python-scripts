@@ -137,7 +137,7 @@ def process_file(args):
             "theta_v": data_theta_v,
             "exner":   data_exner,
             #"vn": data_vn,
-            "w": data_w,
+            #"w": data_w,
             "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
             "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float),
         }
