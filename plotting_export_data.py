@@ -29,7 +29,7 @@ _ibm = ibm.ImmersedBoundaryMethod(
 )
 del plot.tri._cpp_triangulation
 
-with open("plotting_250x250x250_1.25.pkl", "wb") as f:
+with open("data/plotting_250x250x250_1.25.pkl", "wb") as f:
     pickle.dump({
         "tri": plot.tri,
         "full_level_heights": plot.full_level_heights,

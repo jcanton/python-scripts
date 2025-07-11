@@ -23,23 +23,31 @@ dx = 1.25
 # )
 # tri = plot.tri
 
-with open("../data/plotting_250x250x250_1.25.pkl", "rb") as f:
+with open("data/plotting_250x250x250_1.25.pkl", "rb") as f:
     plotting = pickle.load(f)
+    tri = plotting["tri"]
+    full_level_heights = plotting["full_level_heights"]
+    half_level_heights = plotting["half_level_heights"]
+    full_cell_mask = plotting["full_cell_mask"]
+    half_cell_mask = plotting["half_cell_mask"]
+    full_edge_mask = plotting["full_edge_mask"]
+    half_edge_mask = plotting["half_edge_mask"]
+full_levels = full_level_heights[0,:]
+half_levels = half_level_heights[0,:]
 
 #-------------------------------------------------------------------------------
 # Load data
 #
 
-fname = os.path.join("../data/runyb_test_wiggles_cube_adv_term/advection_corrector.pkl")
+fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/advection_predictor_000000.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
-    w_dvndz = state["w_dvndz"]
+    vn_adv = state["vn_adv"]
     vn_eh = state["vn_eh"]
     w_wcc_cf = state["w_wcc_cf"]
 
-#fname = os.path.join("../data/runyb_test_wiggles_cube_adv_term/end_of_dyn_timestep.pkl")
-fname = os.path.join("../data/runyb_test_wiggles_cube_adv_term/end_of_timestep_000000.pkl")
-#fname = os.path.join("../data/runyb_test_wiggles_cube_adv_term/end_of_timestep_002500.pkl")
+#fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/end_of_timestep_000000.pkl")
+fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/end_of_dyn_substep_000004.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -79,7 +87,7 @@ n_points = n_edges
 fig = plt.figure(1); plt.clf(); plt.show(block=False)
 ax = fig.subplots(nrows=1, ncols=1)
 cmap = plt.get_cmap("Greys"); cmap.set_under("white", alpha=0)
-im = ax.tripcolor(tri, ibm_mask_cf[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, vmin=0.5, alpha=0.2)
+im = ax.tripcolor(tri, full_cell_mask[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, vmin=0.5, alpha=0.2)
 ax.plot(tri.edge_x[e_idxs], tri.edge_y[e_idxs], '+r')
 ax.plot(tri.cell_x[c_idxs], tri.cell_y[c_idxs], 'ob')
 for i in range(n_points):
@@ -95,17 +103,32 @@ axs = fig.subplots(nrows=2, ncols=n_points, sharex=False, sharey=True)
 for i in range(n_points):
 
     axs[0][i].set_title(f"E {i+1}")
-    axs[0][i].plot(-vn[e_idxs[i],::-1], range(200), '-o', ms=2)
-    #axs[0][i].plot(-vn_eh[e_idxs[i],::-1], range(201), '-o', ms=2)
+    axs[0][i].plot(-vn[e_idxs[i],:],    full_levels, '-o', ms=2)
+    #axs[0][i].plot(-vn_eh[e_idxs[i],:], half_levels, '-+', ms=2)
 
     axs[1][i].set_title(f"C {i+1}")
-    axs[1][i].plot(w[c_idxs[i],::-1], range(201), '-o', ms=2)
+    axs[1][i].plot(w[c_idxs[i],::-1], half_levels, '-o', ms=2)
+
+    # ibm masks
+    axs[0][i].plot(0 * np.ones(np.sum(half_edge_mask[e_idxs[i], :].astype(int))), half_levels[half_edge_mask[e_idxs[i], :].astype(bool)], '+k')
+    axs[0][i].plot(0 * np.ones(np.sum(full_edge_mask[e_idxs[i], :].astype(int))), full_levels[full_edge_mask[e_idxs[i], :].astype(bool)], 'xk')
+    axs[1][i].plot(0 * np.ones(np.sum(half_cell_mask[c_idxs[i], :].astype(int))), half_levels[half_cell_mask[c_idxs[i], :].astype(bool)], '+k')
+    axs[1][i].plot(0 * np.ones(np.sum(full_cell_mask[c_idxs[i], :].astype(int))), full_levels[full_cell_mask[c_idxs[i], :].astype(bool)], 'xk')
+
+    # grid (full and half levels)
+    axs[0][i].set_yticks(full_levels, minor=False)
+    axs[0][i].set_yticks(half_levels, minor=True)
+    axs[0][i].yaxis.grid(which='major', color='#DDDDDD', linewidth=0.8)
+    axs[0][i].yaxis.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
+    axs[1][i].set_yticks(full_levels, minor=False)
+    axs[1][i].set_yticks(half_levels, minor=True)
+    axs[1][i].yaxis.grid(which='major', color='#DDDDDD', linewidth=0.8)
+    axs[1][i].yaxis.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
 
 axs[0][0].set_ylabel(r"$v_n$ [m/s]")
 axs[1][0].set_ylabel(r"$w$ [m/s]")
 
-axs[0][0].set_ylim([75, 95])
-
+axs[0][0].set_ylim([90, 105])
 plt.draw()
 
 
