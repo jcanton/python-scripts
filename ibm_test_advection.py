@@ -39,15 +39,21 @@ half_levels = half_level_heights[0,:]
 # Load data
 #
 
-fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/advection_predictor_000000.pkl")
+fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/000000_advection_predictor.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
-    vn_adv = state["vn_adv"]
-    vn_eh = state["vn_eh"]
-    w_wcc_cf = state["w_wcc_cf"]
+    p_vn_adv = state["vn_adv"]
+    p_vn_eh = state["vn_eh"]
+    p_w_wcc_cf = state["w_wcc_cf"]
+fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/000004_advection_corrector.pkl")
+with open(fname, "rb") as ifile:
+    state = pickle.load(ifile)
+    c_vn_adv = state["vn_adv"]
+    c_vn_eh = state["vn_eh"]
+    c_w_wcc_cf = state["w_wcc_cf"]
 
-#fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/end_of_timestep_000000.pkl")
-fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/end_of_dyn_substep_000004.pkl")
+#fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/000026_end_of_timestep_000000.pkl")
+fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/000005_end_of_dyn_substep_000000.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -56,10 +62,24 @@ with open(fname, "rb") as ifile:
     exner = state["exner"]
     theta_v = state["theta_v"]
 
+# Three locations in solve_nonhydro where vn_eh is computed again by interpolation
+fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/000001_solve_nonhydro_01.pkl")
+with open(fname, "rb") as ifile:
+    state = pickle.load(ifile)
+    vn_eh_01 = state["vn_eh"]
+fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/000002_solve_nonhydro_02.pkl")
+with open(fname, "rb") as ifile:
+    state = pickle.load(ifile)
+    vn_eh_02 = state["vn_eh"]
+fname = os.path.join("../icon4py/runyb_test_wiggles_cube_adv_term/000003_solve_nonhydro_03.pkl")
+with open(fname, "rb") as ifile:
+    state = pickle.load(ifile)
+    vn_eh_03 = state["vn_eh"]
+
 #-------------------------------------------------------------------------------
 # Vertical profiles (b)
 #
-x0 = [170, 185]
+x0 = [170, 181]
 y0 = 124
 
 # pick edge indexes
@@ -83,19 +103,19 @@ if n_cells > n_edges:
     n_cells = len(c_idxs)
 n_points = n_edges
 
-# profiles locations
-fig = plt.figure(1); plt.clf(); plt.show(block=False)
-ax = fig.subplots(nrows=1, ncols=1)
-cmap = plt.get_cmap("Greys"); cmap.set_under("white", alpha=0)
-im = ax.tripcolor(tri, full_cell_mask[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, vmin=0.5, alpha=0.2)
-ax.plot(tri.edge_x[e_idxs], tri.edge_y[e_idxs], '+r')
-ax.plot(tri.cell_x[c_idxs], tri.cell_y[c_idxs], 'ob')
-for i in range(n_points):
-    ax.text(tri.edge_x[e_idxs[i]], tri.edge_y[e_idxs[i]], str(i+1), color='red',  fontsize=8, ha='left', va='bottom')
-    ax.text(tri.cell_x[c_idxs[i]], tri.cell_y[c_idxs[i]], str(i+1), color='blue', fontsize=8, ha='left', va='bottom')
-ax.set_xlim(x0[0]-3*dx, x0[1]+3*dx)
-ax.set_ylim(y0-3*dx, y0+3*dx)
-plt.draw()
+# # profiles locations
+# fig = plt.figure(1); plt.clf(); plt.show(block=False)
+# ax = fig.subplots(nrows=1, ncols=1)
+# cmap = plt.get_cmap("Greys"); cmap.set_under("white", alpha=0)
+# im = ax.tripcolor(tri, full_cell_mask[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, vmin=0.5, alpha=0.2)
+# ax.plot(tri.edge_x[e_idxs], tri.edge_y[e_idxs], '+r')
+# ax.plot(tri.cell_x[c_idxs], tri.cell_y[c_idxs], 'ob')
+# for i in range(n_points):
+#     ax.text(tri.edge_x[e_idxs[i]], tri.edge_y[e_idxs[i]], str(i+1), color='red',  fontsize=8, ha='left', va='bottom')
+#     ax.text(tri.cell_x[c_idxs[i]], tri.cell_y[c_idxs[i]], str(i+1), color='blue', fontsize=8, ha='left', va='bottom')
+# ax.set_xlim(x0[0]-3*dx, x0[1]+3*dx)
+# ax.set_ylim(y0-3*dx, y0+3*dx)
+# plt.draw()
 
 # vertical profiles
 fig = plt.figure(2); plt.clf(); plt.show(block=False)
@@ -103,18 +123,24 @@ axs = fig.subplots(nrows=2, ncols=n_points, sharex=False, sharey=True)
 for i in range(n_points):
 
     axs[0][i].set_title(f"E {i+1}")
-    axs[0][i].plot(-vn[e_idxs[i],:],    full_levels, '-o', ms=2)
-    #axs[0][i].plot(-vn_eh[e_idxs[i],:], half_levels, '-+', ms=2)
+    axs[0][i].plot(-vn[e_idxs[i],:],     full_levels, '-o', ms=2)
+    #axs[0][i].plot(-p_vn_eh[e_idxs[i],:],  half_levels, '-+', ms=4)
+    #axs[0][i].plot(-c_vn_eh[e_idxs[i],:],  half_levels, '--x', ms=4)
+    # Plot at three locations in solve_nonhydro where vn_eh is computed again by interpolation
+    ### axs[0][i].plot(-vn_eh_01[e_idxs[i],:],  half_levels, '-+', ms=4)
+    ### axs[0][i].plot(-vn_eh_02[e_idxs[i],:],  half_levels, '--x', ms=4)
+    ### axs[0][i].plot(-vn_eh_03[e_idxs[i],:],  half_levels, ':1', ms=4)
 
-    axs[1][i].set_title(f"C {i+1}")
+    #axs[1][i].set_title(f"C {i+1}")
     axs[1][i].plot(w[c_idxs[i],::-1], half_levels, '-o', ms=2)
+    #axs[1][i].plot(-p_vn_adv[e_idxs[i],:], full_levels, '-d',  ms=2)
+    #axs[1][i].plot(-c_vn_adv[e_idxs[i],:], full_levels, '--s', ms=2)
 
     # ibm masks
     axs[0][i].plot(0 * np.ones(np.sum(half_edge_mask[e_idxs[i], :].astype(int))), half_levels[half_edge_mask[e_idxs[i], :].astype(bool)], '+k')
     axs[0][i].plot(0 * np.ones(np.sum(full_edge_mask[e_idxs[i], :].astype(int))), full_levels[full_edge_mask[e_idxs[i], :].astype(bool)], 'xk')
     axs[1][i].plot(0 * np.ones(np.sum(half_cell_mask[c_idxs[i], :].astype(int))), half_levels[half_cell_mask[c_idxs[i], :].astype(bool)], '+k')
     axs[1][i].plot(0 * np.ones(np.sum(full_cell_mask[c_idxs[i], :].astype(int))), full_levels[full_cell_mask[c_idxs[i], :].astype(bool)], 'xk')
-
     # grid (full and half levels)
     axs[0][i].set_yticks(full_levels, minor=False)
     axs[0][i].set_yticks(half_levels, minor=True)
@@ -126,8 +152,7 @@ for i in range(n_points):
     axs[1][i].yaxis.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
 
 axs[0][0].set_ylabel(r"$v_n$ [m/s]")
-axs[1][0].set_ylabel(r"$w$ [m/s]")
-
+#axs[1][0].set_ylabel(r"$w$ [m/s]")
 axs[0][0].set_ylim([90, 105])
 plt.draw()
 
