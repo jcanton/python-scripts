@@ -9,8 +9,11 @@ from icon4py.model.atmosphere.dycore import ibm
 # Some serialized data
 #
 
-ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_gauss3d_250x250x250.uniform200_flat/ser_data"
-ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Torus_Triangles_250m_x_250m_res1.25m.nc"
+ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_gauss3d_250x250.uniform400_flat/ser_data"
+ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Torus_Triangles_250m_x_250m_res2.5m.nc"
+
+#ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_gauss3d_250x250x250.uniform200_flat/ser_data"
+#ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Torus_Triangles_250m_x_250m_res1.25m.nc"
 
 icon4py_dir = os.path.join(os.getcwd(), "../icon4py")
 grid_file_path = os.path.join(icon4py_dir, ICON4PY_GRID_FILE_PATH)
@@ -29,7 +32,8 @@ _ibm = ibm.ImmersedBoundaryMethod(
 )
 del plot.tri._cpp_triangulation
 
-with open("data/plotting_250x250x250_1.25.pkl", "wb") as f:
+with open("data/plotting_250x250x1000_2.5.pkl", "wb") as f:
+#with open("data/plotting_250x250x250_1.25.pkl", "wb") as f:
     pickle.dump({
         "tri": plot.tri,
         "full_level_heights": plot.full_level_heights,
