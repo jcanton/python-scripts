@@ -38,8 +38,10 @@ with open(fname, "rb") as ifile:
     exner0 = state["exner"]
     theta_v0 = state["theta_v"]
 #
-#fname = os.path.join(main_dir, run_name, "000002_end_of_timestep_000000.pkl")
-fname = os.path.join(main_dir, run_name, "000012_end_of_timestep_000100.pkl")
+#fname = os.path.join(main_dir, run_name, "000023_diffusion_after.pkl")
+#fname = os.path.join(main_dir, run_name, "000024_end_of_timestep_000000.pkl")
+#fname = os.path.join(main_dir, run_name, "000026_end_of_predictor.pkl")
+fname = os.path.join(main_dir, run_name, "001006_end_of_timestep_000334.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -47,22 +49,35 @@ with open(fname, "rb") as ifile:
     rho = state["rho"]
     exner = state["exner"]
     theta_v = state["theta_v"]
-##fname = os.path.join(main_dir, run_name, "000002_diffusion_before.pkl")
-##with open(fname, "rb") as ifile:
-##    state = pickle.load(ifile)
-##    vn = state["vn"]
-##    w = state["w"]
-##    rho = state["rho"]
-##    exner = state["exner"]
-##    theta_v = state["theta_v"]
-##fname = os.path.join(main_dir, run_name, "000003_diffusion_after.pkl")
-##with open(fname, "rb") as ifile:
-##    state = pickle.load(ifile)
-##    vnd = state["vn"]
-##    wd = state["w"]
-##    rhod = state["rho"]
-##    exnerd = state["exner"]
-##    theta_vd = state["theta_v"]
+
+## fname = os.path.join(main_dir, run_name, "000002_diffusion_before.pkl")
+## with open(fname, "rb") as ifile:
+##     state = pickle.load(ifile)
+##     vn = state["vn"]
+##     w = state["w"]
+##     rho = state["rho"]
+##     exner = state["exner"]
+##     theta_v = state["theta_v"]
+## fname = os.path.join(main_dir, run_name, "000003_diffusion_after.pkl")
+## with open(fname, "rb") as ifile:
+##     state = pickle.load(ifile)
+##     vnd = state["vn"]
+##     wd = state["w"]
+##     rhod = state["rho"]
+##     exnerd = state["exner"]
+##     theta_vd = state["theta_v"]
+
+## fname = os.path.join(main_dir, run_name, "000003_vn_tendency.pkl")
+## with open(fname, "rb") as ifile:
+##     state = pickle.load(ifile)
+##     vn_c = state["vn_curr"]
+##     vn_n = state["vn_next"]
+##     vn_adv = state["vn_adv"]
+##     theta_v_ef = state["theta_v_ef"]
+##     gradh_exner = state["gradh_exner"]
+##     dt = state["dt"]
+##     cpd = state["cpd"]
+
 
 #-------------------------------------------------------------------------------
 # Vertical profiles (b)
@@ -115,26 +130,26 @@ for i in range(n_points):
     axs[0][i].set_title(f"{i+1}")
     #axs[0][i].plot(-vn0[e_idxs[i],:], full_levels, '-o',  ms=4)
     axs[0][i].plot(-vn [e_idxs[i],:], full_levels, '--+',  ms=4)
-    axs[0][i].plot(-vnd[e_idxs[i],:], full_levels, '--+',  ms=4)
+    #axs[0][i].plot(-vnd[e_idxs[i],:], full_levels, '--+',  ms=4)
 
     #axs[1][i].plot(w0[c_idxs[i],:], half_levels, '-o',  ms=4)
     axs[1][i].plot(w [c_idxs[i],:], half_levels, '--+',  ms=4)
-    axs[1][i].plot(wd[c_idxs[i],:], half_levels, '--+',  ms=4)
+    #axs[1][i].plot(wd[c_idxs[i],:], half_levels, '--+',  ms=4)
 
     #axs[2][i].plot(rho0[c_idxs[i],:], full_levels, '-o', ms=4)
     #axs[2][i].plot(rho [c_idxs[i],:], full_levels, '--+', ms=4)
     axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--+', ms=4)
-    axs[2][i].plot(rhod[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--+', ms=4)
+    #axs[2][i].plot(rhod[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--+', ms=4)
 
     #axs[3][i].plot(exner0[c_idxs[i],:], full_levels, '-o', ms=4)
     #axs[3][i].plot(exner [c_idxs[i],:], full_levels, '--+', ms=4)
     axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--+', ms=4)
-    axs[3][i].plot(exnerd[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--+', ms=4)
+    #axs[3][i].plot(exnerd[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--+', ms=4)
 
     #axs[4][i].plot(theta_v0[c_idxs[i],:], full_levels, '-o', ms=4)
     #axs[4][i].plot(theta_v [c_idxs[i],:], full_levels, '--+', ms=4)
     axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--+', ms=4)
-    axs[4][i].plot(theta_vd[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--+', ms=4)
+    #axs[4][i].plot(theta_vd[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--+', ms=4)
 
     for ax in axs:
         # ibm masks
@@ -151,6 +166,6 @@ axs[1][0].set_ylabel(r"$w$")
 axs[2][0].set_ylabel(r"$\rho$")
 axs[3][0].set_ylabel(r"$\pi$")
 axs[4][0].set_ylabel(r"$\theta_v$")
-#axs[1][0].set_ylabel(r"tendency [m/s]")
 axs[0][0].set_ylim([90, 115])
+#axs[0][0].set_ylim([0, 20])
 plt.draw()
