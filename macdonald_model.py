@@ -42,7 +42,7 @@ plt.plot(eq01(z01), z01, '-k')
 plt.draw()
 
 
-# mac_data=np.loadtxt('macdonald_2000_cube_arrays.csv', delimiter=',', skiprows=2)
+# mac_data=np.loadtxt('data/macdonald_2000_cube_arrays.csv', delimiter=',', skiprows=2)
 # plt.plot(
 #     mac_data[:,4],
 #     mac_data[:,5],

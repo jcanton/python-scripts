@@ -55,7 +55,7 @@ output_files = [
     "avg_state_end_of_timestep_036000-end_of_timestep_180000.pkl",
     "avg_state_end_of_timestep_180000-end_of_timestep_324000.pkl",
 ]
-mac_data=np.loadtxt('macdonald_2000_cube_arrays.csv', delimiter=',', skiprows=2)
+mac_data=np.loadtxt('data/macdonald_2000_cube_arrays.csv', delimiter=',', skiprows=2)
 
 if not os.path.exists(imgs_dir):
     os.makedirs(imgs_dir)
