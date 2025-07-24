@@ -5,8 +5,12 @@ from scipy.interpolate import griddata
 
 import gt4py.next as gtx
 from icon4py.model.common.io import plots
-from icon4py.model.atmosphere.dycore import ibm
 from concurrent.futures import ProcessPoolExecutor
+try:
+    from icon4py.model.atmosphere.dycore import ibm
+    do_ibm = True
+except ImportError:
+    do_ibm = False
 
 
 # -------------------------------------------------------------------------------
@@ -116,12 +120,13 @@ def process_file(args):
         grid_file_path=grid_file_path,
         backend=gtx.gtfn_cpu,
     )
-    _ibm = ibm.ImmersedBoundaryMethod(
-        grid=plot.grid,
-        savepoint_path=savepoint_path,
-        grid_file_path=grid_file_path,
-        backend=gtx.gtfn_cpu,
-    )
+    if do_ibm:
+        _ibm = ibm.ImmersedBoundaryMethod(
+            grid=plot.grid,
+            savepoint_path=savepoint_path,
+            grid_file_path=grid_file_path,
+            backend=gtx.gtfn_cpu,
+        )
 
     filename = os.path.basename(file_path).split('.')[0]
     print(f"Plotting {filename}")
@@ -139,7 +144,7 @@ def process_file(args):
             #"vn": data_vn,
             #"w": data_w,
             "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
-            "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float),
+            "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float) if do_ibm else None,
         }
     )
 
@@ -158,7 +163,8 @@ if __name__ == "__main__":
     if not os.path.exists(vtks_dir):
         os.makedirs(vtks_dir)
 
-    output_files = glob.glob(os.path.join(output_files_dir, '??????_end_of_timestep_??????.pkl'))
+    output_files = glob.glob(os.path.join(output_files_dir, 'end_of_timestep_0000??.pkl'))
+    #output_files = glob.glob(os.path.join(output_files_dir, '??????_end_of_timestep_??????.pkl'))
     output_files.sort()
 
     print(f"Found {len(output_files)} output files in {output_files_dir}")
