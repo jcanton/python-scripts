@@ -30,9 +30,11 @@ u_sym /= u_bulk  # scale to bulk velocity
 data = np.loadtxt("./data/MKM_chan590.mean", skiprows=25)
 MKM_y = data[:,0]
 MKM_u = data[:,2]
+MKM_y = np.concatenate((MKM_y, 2 - MKM_y[::-1]), axis=0)
+MKM_u = np.concatenate((MKM_u,     MKM_u[::-1]), axis=0)
 
 # check bulk velocity and scale
-u_bulk = np.trapezoid(MKM_u, MKM_y)
+u_bulk = np.trapezoid(MKM_u, MKM_y) / MKM_y[-1]
 MKM_u /= u_bulk  # scale to bulk velocity
 
 # ==============================================================================
@@ -53,7 +55,7 @@ plt.plot(y, u, 'o', label="Rodi's data", alpha=0.6)
 plt.plot(y_fine, u_interp(y_fine), '--', label="Rodi's interpolation", alpha=0.5)
 plt.plot(y_fine, u_sym, label=r"Rodi's symmetrized and scaled to $U_b=1$, $Re_b = 40000$", linewidth=2)
 
-plt.plot(MKM_y, MKM_u, '-b', label="Moser, Kim and Mansour's data, $Re_b = 10779$")
+plt.plot(MKM_y, MKM_u, '-+b', label="Moser, Kim and Mansour's data, $Re_b = 10779$")
 plt.plot(LM_y, LM_u,   '-r', label="Lee and Moser's data, $Re_b = 128127$")
 
 plt.xlabel(r"$y$")
@@ -61,3 +63,4 @@ plt.ylabel(r"$u(y)$")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
+plt.draw()
