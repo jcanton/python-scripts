@@ -7,41 +7,38 @@ import numpy as np
 # -------------------------------------------------------------------------------
 # Some serialized data
 #
-#dx = 2.5
-dx = 1.25
+dx = 5
 
-#with open("data/plotting_250x250x1000_2.5.pkl", "rb") as f:
-with open("data/plotting_250x250x250_1.25.pkl", "rb") as f:
+#with open("./data/plotting_250x250x1000_2.5.pkl", "rb") as f:
+#with open("./data/plotting_250x250x250_1.25.pkl", "rb") as f:
+with open("./data/plotting_channel_950x350x100_5m_nlev20.pkl", "rb") as f:
     plotting = pickle.load(f)
     tri = plotting["tri"]
     full_level_heights = plotting["full_level_heights"]
     half_level_heights = plotting["half_level_heights"]
-    full_cell_mask = plotting["full_cell_mask"]
-    half_cell_mask = plotting["half_cell_mask"]
-    full_edge_mask = plotting["full_edge_mask"]
-    half_edge_mask = plotting["half_edge_mask"]
+    #full_cell_mask = plotting["full_cell_mask"]
+    #half_cell_mask = plotting["half_cell_mask"]
+    #full_edge_mask = plotting["full_edge_mask"]
+    #half_edge_mask = plotting["half_edge_mask"]
 full_levels = full_level_heights[0,:]
 half_levels = half_level_heights[0,:]
 
 #-------------------------------------------------------------------------------
 # Load data
 #
-main_dir = "../icon4py"
-run_name = "runyf_test_wiggles"
+main_dir = "../runs_icon4py"
+run_name = "channel_950x350x100_5m_nlev20_leeMoser"
 
-fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
-with open(fname, "rb") as ifile:
-    state = pickle.load(ifile)
-    vn0 = state["vn"]
-    w0 = state["w"]
-    rho0 = state["rho"]
-    exner0 = state["exner"]
-    theta_v0 = state["theta_v"]
-#
-#fname = os.path.join(main_dir, run_name, "000023_diffusion_after.pkl")
-#fname = os.path.join(main_dir, run_name, "000024_end_of_timestep_000000.pkl")
-#fname = os.path.join(main_dir, run_name, "000026_end_of_predictor.pkl")
-fname = os.path.join(main_dir, run_name, "001006_end_of_timestep_000334.pkl")
+#fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
+#with open(fname, "rb") as ifile:
+#    state = pickle.load(ifile)
+#    vn0 = state["vn"]
+#    w0 = state["w"]
+#    rho0 = state["rho"]
+#    exner0 = state["exner"]
+#    theta_v0 = state["theta_v"]
+
+fname = os.path.join(main_dir, run_name, "end_of_timestep_000000.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -50,42 +47,11 @@ with open(fname, "rb") as ifile:
     exner = state["exner"]
     theta_v = state["theta_v"]
 
-## fname = os.path.join(main_dir, run_name, "000002_diffusion_before.pkl")
-## with open(fname, "rb") as ifile:
-##     state = pickle.load(ifile)
-##     vn = state["vn"]
-##     w = state["w"]
-##     rho = state["rho"]
-##     exner = state["exner"]
-##     theta_v = state["theta_v"]
-## fname = os.path.join(main_dir, run_name, "000003_diffusion_after.pkl")
-## with open(fname, "rb") as ifile:
-##     state = pickle.load(ifile)
-##     vnd = state["vn"]
-##     wd = state["w"]
-##     rhod = state["rho"]
-##     exnerd = state["exner"]
-##     theta_vd = state["theta_v"]
-
-## fname = os.path.join(main_dir, run_name, "000003_vn_tendency.pkl")
-## with open(fname, "rb") as ifile:
-##     state = pickle.load(ifile)
-##     vn_c = state["vn_curr"]
-##     vn_n = state["vn_next"]
-##     vn_adv = state["vn_adv"]
-##     theta_v_ef = state["theta_v_ef"]
-##     gradh_exner = state["gradh_exner"]
-##     dt = state["dt"]
-##     cpd = state["cpd"]
-
-
 #-------------------------------------------------------------------------------
 # Vertical profiles (b)
 #
-x0 = [170, 181.3]
-x0 = [170, 185]
-#x0 = [ 72,  83] # front of building
-y0 = 124
+x0 = [0, 50]
+y0 = 340
 
 # pick edge indexes
 e_dist = ((tri.edge_y-y0)**2 )**0.5
@@ -107,19 +73,20 @@ if n_cells > n_edges:
     n_cells = len(c_idxs)
 n_points = n_edges
 
-# # profiles locations
-# fig = plt.figure(1); plt.clf(); plt.show(block=False)
-# ax = fig.subplots(nrows=1, ncols=1)
-# cmap = plt.get_cmap("Greys"); cmap.set_under("white", alpha=0)
-# im = ax.tripcolor(tri, full_cell_mask[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, vmin=0.5, alpha=0.2)
-# ax.plot(tri.edge_x[e_idxs], tri.edge_y[e_idxs], '+r')
-# ax.plot(tri.cell_x[c_idxs], tri.cell_y[c_idxs], 'ob')
-# for i in range(n_points):
-#     ax.text(tri.edge_x[e_idxs[i]], tri.edge_y[e_idxs[i]], str(i+1), color='red',  fontsize=8, ha='left', va='bottom')
-#     ax.text(tri.cell_x[c_idxs[i]], tri.cell_y[c_idxs[i]], str(i+1), color='blue', fontsize=8, ha='left', va='bottom')
-# ax.set_xlim(x0[0]-3*dx, x0[1]+3*dx)
-# ax.set_ylim(y0-3*dx, y0+3*dx)
-# plt.draw()
+# profiles locations
+fig = plt.figure(1); plt.clf(); plt.show(block=False)
+ax = fig.subplots(nrows=1, ncols=1)
+cmap = plt.get_cmap("Greys"); cmap.set_under("white", alpha=0)
+#im = ax.tripcolor(tri, full_cell_mask[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, vmin=0.5, alpha=0.2)
+im = ax.tripcolor(tri, full_level_heights[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, alpha=0.2)
+ax.plot(tri.edge_x[e_idxs], tri.edge_y[e_idxs], '+r')
+ax.plot(tri.cell_x[c_idxs], tri.cell_y[c_idxs], 'ob')
+for i in range(n_points):
+    ax.text(tri.edge_x[e_idxs[i]], tri.edge_y[e_idxs[i]], str(i+1), color='red',  fontsize=8, ha='left', va='bottom')
+    ax.text(tri.cell_x[c_idxs[i]], tri.cell_y[c_idxs[i]], str(i+1), color='blue', fontsize=8, ha='left', va='bottom')
+ax.set_xlim(x0[0]-3*dx, x0[1]+3*dx)
+ax.set_ylim(y0-3*dx, y0+3*dx)
+plt.draw()
 
 # vertical profiles
 fig = plt.figure(2); plt.clf(); plt.show(block=False)
@@ -128,33 +95,23 @@ axs = fig.subplots(nrows=5, ncols=n_points, sharex=False, sharey=True)
 for i in range(n_points):
 
     axs[0][i].set_title(f"{i+1}")
-    #axs[0][i].plot(-vn0[e_idxs[i],:], full_levels, '-o',  ms=4)
-    axs[0][i].plot(-vn [e_idxs[i],:], full_levels, '--+',  ms=4)
-    #axs[0][i].plot(-vnd[e_idxs[i],:], full_levels, '--+',  ms=4)
+    axs[0][i].plot(-vn [e_idxs[i],:], full_levels, '-o',  ms=4)
 
-    #axs[1][i].plot(w0[c_idxs[i],:], half_levels, '-o',  ms=4)
-    axs[1][i].plot(w [c_idxs[i],:], half_levels, '--+',  ms=4)
-    #axs[1][i].plot(wd[c_idxs[i],:], half_levels, '--+',  ms=4)
+    axs[1][i].plot(w [c_idxs[i],:], half_levels, '-o',  ms=4)
 
-    #axs[2][i].plot(rho0[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[2][i].plot(rho [c_idxs[i],:], full_levels, '--+', ms=4)
-    axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--+', ms=4)
-    #axs[2][i].plot(rhod[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--+', ms=4)
+    axs[2][i].plot(rho[c_idxs[i],:], full_levels, '-o', ms=4)
+    #axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--+', ms=4)
 
-    #axs[3][i].plot(exner0[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[3][i].plot(exner [c_idxs[i],:], full_levels, '--+', ms=4)
-    axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--+', ms=4)
-    #axs[3][i].plot(exnerd[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--+', ms=4)
+    axs[3][i].plot(exner[c_idxs[i],:], full_levels, '-o', ms=4)
+    #axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--+', ms=4)
 
-    #axs[4][i].plot(theta_v0[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[4][i].plot(theta_v [c_idxs[i],:], full_levels, '--+', ms=4)
-    axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--+', ms=4)
-    #axs[4][i].plot(theta_vd[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--+', ms=4)
+    axs[4][i].plot(theta_v[c_idxs[i],:], full_levels, '-o', ms=4)
+    #axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--+', ms=4)
 
     for ax in axs:
-        # ibm masks
-        ax[i].plot(0 * np.ones(np.sum(half_edge_mask[e_idxs[i], :].astype(int))), half_levels[half_edge_mask[e_idxs[i], :].astype(bool)], '+k')
-        ax[i].plot(0 * np.ones(np.sum(full_edge_mask[e_idxs[i], :].astype(int))), full_levels[full_edge_mask[e_idxs[i], :].astype(bool)], 'xk')
+        ## ibm masks
+        #ax[i].plot(0 * np.ones(np.sum(half_edge_mask[e_idxs[i], :].astype(int))), half_levels[half_edge_mask[e_idxs[i], :].astype(bool)], '+k')
+        #ax[i].plot(0 * np.ones(np.sum(full_edge_mask[e_idxs[i], :].astype(int))), full_levels[full_edge_mask[e_idxs[i], :].astype(bool)], 'xk')
         # grid (full and half levels)
         ax[i].set_yticks(full_levels, minor=False)
         ax[i].set_yticks(half_levels, minor=True)
@@ -166,6 +123,5 @@ axs[1][0].set_ylabel(r"$w$")
 axs[2][0].set_ylabel(r"$\rho$")
 axs[3][0].set_ylabel(r"$\pi$")
 axs[4][0].set_ylabel(r"$\theta_v$")
-axs[0][0].set_ylim([90, 115])
-#axs[0][0].set_ylim([0, 20])
+#axs[0][0].set_ylim([90, 115])
 plt.draw()
