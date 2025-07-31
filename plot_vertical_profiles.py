@@ -29,16 +29,17 @@ half_levels = half_level_heights[0,:]
 main_dir = "../runs_icon4py"
 run_name = "channel_950x350x100_5m_nlev20_leeMoser"
 
-#fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
-#with open(fname, "rb") as ifile:
-#    state = pickle.load(ifile)
-#    vn0 = state["vn"]
-#    w0 = state["w"]
-#    rho0 = state["rho"]
-#    exner0 = state["exner"]
-#    theta_v0 = state["theta_v"]
+fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
+with open(fname, "rb") as ifile:
+    state = pickle.load(ifile)
+    vn0 = state["vn"]
+    w0 = state["w"]
+    rho0 = state["rho"]
+    exner0 = state["exner"]
+    theta_v0 = state["theta_v"]
 
-fname = os.path.join(main_dir, run_name, "end_of_timestep_000000.pkl")
+fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
+#fname = os.path.join(main_dir, run_name, "end_of_timestep_000499.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -50,8 +51,9 @@ with open(fname, "rb") as ifile:
 #-------------------------------------------------------------------------------
 # Vertical profiles (b)
 #
-x0 = [0, 50]
-y0 = 340
+x0 = [0, 20]
+y0 = 175
+y0 = 339
 
 # pick edge indexes
 e_dist = ((tri.edge_y-y0)**2 )**0.5
@@ -100,13 +102,13 @@ for i in range(n_points):
     axs[1][i].plot(w [c_idxs[i],:], half_levels, '-o',  ms=4)
 
     axs[2][i].plot(rho[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--+', ms=4)
+    #axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--o', ms=4)
 
     axs[3][i].plot(exner[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--+', ms=4)
+    #axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--o', ms=4)
 
     axs[4][i].plot(theta_v[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--+', ms=4)
+    #axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--o', ms=4)
 
     for ax in axs:
         ## ibm masks
@@ -124,4 +126,5 @@ axs[2][0].set_ylabel(r"$\rho$")
 axs[3][0].set_ylabel(r"$\pi$")
 axs[4][0].set_ylabel(r"$\theta_v$")
 #axs[0][0].set_ylim([90, 115])
+plt.subplots_adjust(hspace=0.5, wspace=0.3)
 plt.draw()
