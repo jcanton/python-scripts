@@ -38,8 +38,8 @@ with open(fname, "rb") as ifile:
     exner0 = state["exner"]
     theta_v0 = state["theta_v"]
 
-fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
-#fname = os.path.join(main_dir, run_name, "end_of_timestep_000499.pkl")
+#fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
+fname = os.path.join(main_dir, run_name, "end_of_timestep_000499.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
