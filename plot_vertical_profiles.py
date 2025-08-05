@@ -16,10 +16,10 @@ with open("./data/plotting_channel_950x350x100_5m_nlev20.pkl", "rb") as f:
     tri = plotting["tri"]
     full_level_heights = plotting["full_level_heights"]
     half_level_heights = plotting["half_level_heights"]
-    #full_cell_mask = plotting["full_cell_mask"]
-    #half_cell_mask = plotting["half_cell_mask"]
-    #full_edge_mask = plotting["full_edge_mask"]
-    #half_edge_mask = plotting["half_edge_mask"]
+    full_cell_mask = plotting["full_cell_mask"]
+    half_cell_mask = plotting["half_cell_mask"]
+    full_edge_mask = plotting["full_edge_mask"]
+    half_edge_mask = plotting["half_edge_mask"]
 full_levels = full_level_heights[0,:]
 half_levels = half_level_heights[0,:]
 
@@ -29,7 +29,7 @@ half_levels = half_level_heights[0,:]
 main_dir = "../runs_icon4py"
 run_name = "channel_950x350x100_5m_nlev20_leeMoser"
 
-fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
+fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn0 = state["vn"]
@@ -38,8 +38,8 @@ with open(fname, "rb") as ifile:
     exner0 = state["exner"]
     theta_v0 = state["theta_v"]
 
-#fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
-fname = os.path.join(main_dir, run_name, "end_of_timestep_000499.pkl")
+fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
+fname = os.path.join(main_dir, run_name, "000501_end_of_timestep_000499.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -51,9 +51,10 @@ with open(fname, "rb") as ifile:
 #-------------------------------------------------------------------------------
 # Vertical profiles (b)
 #
-x0 = [0, 20]
+#x0 = [0, 50]
+x0 = [130, 180]
 y0 = 175
-y0 = 339
+#y0 = 339
 
 # pick edge indexes
 e_dist = ((tri.edge_y-y0)**2 )**0.5
@@ -79,7 +80,7 @@ n_points = n_edges
 fig = plt.figure(1); plt.clf(); plt.show(block=False)
 ax = fig.subplots(nrows=1, ncols=1)
 cmap = plt.get_cmap("Greys"); cmap.set_under("white", alpha=0)
-#im = ax.tripcolor(tri, full_cell_mask[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, vmin=0.5, alpha=0.2)
+im = ax.tripcolor(tri, full_cell_mask[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, vmin=0.5, alpha=0.2)
 im = ax.tripcolor(tri, full_level_heights[:, -1].astype(float), edgecolor="k", shading="flat", cmap=cmap, alpha=0.2)
 ax.plot(tri.edge_x[e_idxs], tri.edge_y[e_idxs], '+r')
 ax.plot(tri.cell_x[c_idxs], tri.cell_y[c_idxs], 'ob')
@@ -111,9 +112,9 @@ for i in range(n_points):
     #axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--o', ms=4)
 
     for ax in axs:
-        ## ibm masks
-        #ax[i].plot(0 * np.ones(np.sum(half_edge_mask[e_idxs[i], :].astype(int))), half_levels[half_edge_mask[e_idxs[i], :].astype(bool)], '+k')
-        #ax[i].plot(0 * np.ones(np.sum(full_edge_mask[e_idxs[i], :].astype(int))), full_levels[full_edge_mask[e_idxs[i], :].astype(bool)], 'xk')
+        # ibm masks
+        ax[i].plot(0 * np.ones(np.sum(half_edge_mask[e_idxs[i], :].astype(int))), half_levels[half_edge_mask[e_idxs[i], :].astype(bool)], '+k')
+        ax[i].plot(0 * np.ones(np.sum(full_edge_mask[e_idxs[i], :].astype(int))), full_levels[full_edge_mask[e_idxs[i], :].astype(bool)], 'xk')
         # grid (full and half levels)
         ax[i].set_yticks(full_levels, minor=False)
         ax[i].set_yticks(half_levels, minor=True)
