@@ -29,6 +29,7 @@ plot = plots.Plot(
     grid_file_path=grid_file_path,
     backend=gtx.gtfn_cpu,
 )
+tri = plot.tri
 grid = plot.grid
 full_level_heights = plot.full_level_heights
 half_level_heights = plot.half_level_heights
