@@ -27,9 +27,10 @@ half_levels = half_level_heights[0,:]
 # Load data
 #
 main_dir = "../runs_icon4py"
-run_name = "channel_950x350x100_5m_nlev20_leeMoser"
+run_name = "channel_950x350x100_5m_nlev20_leeMoser_debug"
 
-fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
+#fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
+fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn0 = state["vn"]
@@ -38,8 +39,8 @@ with open(fname, "rb") as ifile:
     exner0 = state["exner"]
     theta_v0 = state["theta_v"]
 
-fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
-fname = os.path.join(main_dir, run_name, "000501_end_of_timestep_000499.pkl")
+#fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
+fname = os.path.join(main_dir, run_name, "000023_end_of_timestep_021000.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -52,9 +53,10 @@ with open(fname, "rb") as ifile:
 # Vertical profiles (b)
 #
 #x0 = [0, 50]
-x0 = [130, 180]
+x0 = [130, 180] # leading edge
+x0 = [180, 230] # trailing edge
+#x0 = [330, 380] # middle of nowhere
 y0 = 175
-#y0 = 339
 
 # pick edge indexes
 e_dist = ((tri.edge_y-y0)**2 )**0.5
@@ -102,19 +104,23 @@ for i in range(n_points):
 
     axs[1][i].plot(w [c_idxs[i],:], half_levels, '-o',  ms=4)
 
-    axs[2][i].plot(rho[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--o', ms=4)
+    #axs[2][i].plot(rho[c_idxs[i],:], full_levels, '-o', ms=4)
+    axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--o', ms=4)
 
-    axs[3][i].plot(exner[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--o', ms=4)
+    #axs[3][i].plot(exner[c_idxs[i],:], full_levels, '-o', ms=4)
+    axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--o', ms=4)
 
-    axs[4][i].plot(theta_v[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--o', ms=4)
+    #axs[4][i].plot(theta_v[c_idxs[i],:], full_levels, '-o', ms=4)
+    axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--o', ms=4)
 
-    for ax in axs:
+    for iax, ax in enumerate(axs):
         # ibm masks
-        ax[i].plot(0 * np.ones(np.sum(half_edge_mask[e_idxs[i], :].astype(int))), half_levels[half_edge_mask[e_idxs[i], :].astype(bool)], '+k')
-        ax[i].plot(0 * np.ones(np.sum(full_edge_mask[e_idxs[i], :].astype(int))), full_levels[full_edge_mask[e_idxs[i], :].astype(bool)], 'xk')
+        if iax == 0:
+            ax[i].plot(0 * np.ones(np.sum(half_edge_mask[e_idxs[i], :].astype(int))), half_levels[half_edge_mask[e_idxs[i], :].astype(bool)], '+k')
+            ax[i].plot(0 * np.ones(np.sum(full_edge_mask[e_idxs[i], :].astype(int))), full_levels[full_edge_mask[e_idxs[i], :].astype(bool)], 'xk')
+        else:
+            ax[i].plot(0 * np.ones(np.sum(half_cell_mask[c_idxs[i], :].astype(int))), half_levels[half_cell_mask[c_idxs[i], :].astype(bool)], '+k')
+            ax[i].plot(0 * np.ones(np.sum(full_cell_mask[c_idxs[i], :].astype(int))), full_levels[full_cell_mask[c_idxs[i], :].astype(bool)], 'xk')
         # grid (full and half levels)
         ax[i].set_yticks(full_levels, minor=False)
         ax[i].set_yticks(half_levels, minor=True)
