@@ -27,7 +27,7 @@ half_levels = half_level_heights[0,:]
 # Load data
 #
 main_dir = "../runs_icon4py"
-run_name = "channel_950x350x100_5m_nlev20_leeMoser_debug"
+run_name = "channel_950x350x100_5m_nlev20_leeMoser"
 
 #fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
 fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
@@ -40,7 +40,7 @@ with open(fname, "rb") as ifile:
     theta_v0 = state["theta_v"]
 
 #fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
-fname = os.path.join(main_dir, run_name, "000023_end_of_timestep_021000.pkl")
+fname = os.path.join(main_dir, run_name, "000146_end_of_timestep_144000.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -89,8 +89,9 @@ ax.plot(tri.cell_x[c_idxs], tri.cell_y[c_idxs], 'ob')
 for i in range(n_points):
     ax.text(tri.edge_x[e_idxs[i]], tri.edge_y[e_idxs[i]], str(i+1), color='red',  fontsize=8, ha='left', va='bottom')
     ax.text(tri.cell_x[c_idxs[i]], tri.cell_y[c_idxs[i]], str(i+1), color='blue', fontsize=8, ha='left', va='bottom')
-ax.set_xlim(x0[0]-3*dx, x0[1]+3*dx)
-ax.set_ylim(y0-3*dx, y0+3*dx)
+ax.set_xlim(x0[0]-5*dx, x0[1]+5*dx)
+ax.set_ylim(y0-5*dx, y0+5*dx)
+ax.set_aspect('equal') #, adjustable='box')
 plt.draw()
 
 # vertical profiles
