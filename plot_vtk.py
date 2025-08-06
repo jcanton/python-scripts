@@ -133,6 +133,7 @@ def process_file(args):
 
     u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
     w_cf = plot._scal_interpolate_to_full_levels(data_w)
+    vort_cf = plot._compute_vorticity(data_vn)
     export_vtk(
         tri=plot.tri,
         half_level_heights=plot.half_level_heights,
@@ -144,6 +145,7 @@ def process_file(args):
             #"vn": data_vn,
             #"w": data_w,
             "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
+            "vort_cf": vort_cf,
             "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float) if do_ibm else None,
         }
     )
