@@ -1,11 +1,15 @@
-import sys, os, glob, pickle
-import numpy as np
-import meshio
-from scipy.interpolate import griddata
+import glob
+import os
+import pickle
+import sys
+from concurrent.futures import ProcessPoolExecutor
 
 import gt4py.next as gtx
+import meshio
+import numpy as np
 from icon4py.model.common.io import plots
-from concurrent.futures import ProcessPoolExecutor
+from scipy.interpolate import griddata
+
 try:
     from icon4py.model.atmosphere.dycore import ibm
     do_ibm = True
@@ -165,8 +169,9 @@ if __name__ == "__main__":
     if not os.path.exists(vtks_dir):
         os.makedirs(vtks_dir)
 
-    #output_files = glob.glob(os.path.join(output_files_dir, 'end_of_timestep_0000??.pkl'))
     output_files = glob.glob(os.path.join(output_files_dir, '??????_end_of_timestep_??????.pkl'))
+    if len(output_files) == 0:
+        output_files = glob.glob(os.path.join(output_files_dir, 'end_of_timestep_*.pkl'))
     output_files.sort()
 
     print(f"Found {len(output_files)} output files in {output_files_dir}")
