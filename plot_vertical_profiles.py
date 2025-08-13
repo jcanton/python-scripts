@@ -42,7 +42,7 @@ with open(fname, "rb") as ifile:
     theta_v0 = state["theta_v"]
 
 #fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
-fname = glob.glob(os.path.join(main_dir, run_name, "010322_end_of_timestep_??????.pkl"))[0]
+#fname = glob.glob(os.path.join(main_dir, run_name, "010322_end_of_timestep_??????.pkl"))[0]
 #fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
 #fname = os.path.join(main_dir, run_name, "end_of_timestep_000000175.pkl")
 #fname = os.path.join(main_dir, run_name, "end_of_timestep_000180000.pkl")
@@ -58,7 +58,7 @@ with open(fname, "rb") as ifile:
     sponge_full_cell = state["sponge_full_cell"]
     sponge_half_cell = state["sponge_half_cell"]
     sponge_full_edge = state["sponge_full_edge"]
-    vn = sponge_full_edge
+    vn = (1 - sponge_full_edge) * vn
     w  = sponge_half_cell
 
 #-------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ x0 = [0, 50] # beginning of channel
 #x0 = [130, 180] # cube leading edge
 #x0 = [180, 230] # cube trailing edge
 #x0 = [330, 380] # middle of nowhere
-#x0 = [880, 950] # end of channel
+x0 = [900, 950] # end of channel
 y0 = 175
 
 # pick edge indexes
