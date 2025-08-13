@@ -1,3 +1,4 @@
+import glob
 import os
 import pickle
 
@@ -27,11 +28,11 @@ half_levels = half_level_heights[0,:]
 # Load data
 #
 main_dir = "../runs_icon4py"
-run_name = "channel_950x350x100_5m_nlev20_leeMoser_debug"
+run_name = "channel_950x350x100_5m_nlev20_leeMoser"
 
-fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
+#fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
 #fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
-#fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
+fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn0 = state["vn"]
@@ -41,11 +42,12 @@ with open(fname, "rb") as ifile:
     theta_v0 = state["theta_v"]
 
 #fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
-#fname = os.path.join(main_dir, run_name, "000146_end_of_timestep_144000.pkl")
+fname = glob.glob(os.path.join(main_dir, run_name, "010322_end_of_timestep_??????.pkl"))[0]
 #fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
-fname = os.path.join(main_dir, run_name, "end_of_timestep_000000024.pkl")
+#fname = os.path.join(main_dir, run_name, "end_of_timestep_000000175.pkl")
 #fname = os.path.join(main_dir, run_name, "end_of_timestep_000180000.pkl")
 #fname = os.path.join(main_dir, run_name, "avgs/avg_hour020.pkl")
+fname = os.path.join(main_dir, run_name, "000002_channel.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -53,6 +55,11 @@ with open(fname, "rb") as ifile:
     rho = state["rho"]
     exner = state["exner"]
     theta_v = state["theta_v"]
+    sponge_full_cell = state["sponge_full_cell"]
+    sponge_half_cell = state["sponge_half_cell"]
+    sponge_full_edge = state["sponge_full_edge"]
+    vn = sponge_full_edge
+    w  = sponge_half_cell
 
 #-------------------------------------------------------------------------------
 # Vertical profiles (b)
@@ -61,7 +68,7 @@ x0 = [0, 50] # beginning of channel
 #x0 = [130, 180] # cube leading edge
 #x0 = [180, 230] # cube trailing edge
 #x0 = [330, 380] # middle of nowhere
-x0 = [900, 950] # end of channel
+#x0 = [880, 950] # end of channel
 y0 = 175
 
 # pick edge indexes
@@ -143,36 +150,36 @@ axs[4][0].set_ylabel(r"$\theta_v$")
 plt.subplots_adjust(hspace=0.5, wspace=0.3)
 plt.draw()
 
-# ==============================================================================
-# temporal average
-fig = plt.figure(3); plt.clf(); plt.show(block=False)
-fig.suptitle(fname)
-axs = fig.subplots(nrows=5, ncols=1, sharex=False, sharey=True)
-
-axs[0].plot(-np.average(vn     , axis=0),                                full_levels, '-o',  ms=4)
-axs[1].plot( np.average(w      , axis=0),                                half_levels, '-o',  ms=4)
-#
-#axs[2].plot( np.average(rho    , axis=0),                                full_levels, '-o', ms=4)
-axs[2].plot( np.average(rho    , axis=0) - np.average(rho0,     axis=0), full_levels, '--o', ms=4)
-#
-#axs[3].plot( np.average(exner  , axis=0),                                full_levels, '-o', ms=4)
-axs[3].plot( np.average(exner  , axis=0) - np.average(exner0,   axis=0), full_levels, '--o', ms=4)
-#
-#axs[4].plot( np.average(theta_v, axis=0),                                full_levels, '-o', ms=4)
-axs[4].plot( np.average(theta_v, axis=0) - np.average(theta_v0, axis=0), full_levels, '--o', ms=4)
-
-for iax, ax in enumerate(axs):
-    # grid (full and half levels)
-    ax.set_yticks(full_levels, minor=False)
-    ax.set_yticks(half_levels, minor=True)
-    ax.yaxis.grid(which='major', color='#DDDDDD', linewidth=0.8)
-    ax.yaxis.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
-
-axs[0].set_ylabel(r"$v_n$")
-axs[1].set_ylabel(r"$w$")
-axs[2].set_ylabel(r"$\rho$")
-axs[3].set_ylabel(r"$\pi$")
-axs[4].set_ylabel(r"$\theta_v$")
-#axs[0][0].set_ylim([90, 115])
-plt.subplots_adjust(hspace=0.5, wspace=0.3)
-plt.draw()
+# # ==============================================================================
+# # temporal average
+# fig = plt.figure(3); plt.clf(); plt.show(block=False)
+# fig.suptitle(fname)
+# axs = fig.subplots(nrows=5, ncols=1, sharex=False, sharey=True)
+# 
+# axs[0].plot(-np.average(vn     , axis=0),                                full_levels, '-o',  ms=4)
+# axs[1].plot( np.average(w      , axis=0),                                half_levels, '-o',  ms=4)
+# #
+# #axs[2].plot( np.average(rho    , axis=0),                                full_levels, '-o', ms=4)
+# axs[2].plot( np.average(rho    , axis=0) - np.average(rho0,     axis=0), full_levels, '--o', ms=4)
+# #
+# #axs[3].plot( np.average(exner  , axis=0),                                full_levels, '-o', ms=4)
+# axs[3].plot( np.average(exner  , axis=0) - np.average(exner0,   axis=0), full_levels, '--o', ms=4)
+# #
+# #axs[4].plot( np.average(theta_v, axis=0),                                full_levels, '-o', ms=4)
+# axs[4].plot( np.average(theta_v, axis=0) - np.average(theta_v0, axis=0), full_levels, '--o', ms=4)
+# 
+# for iax, ax in enumerate(axs):
+#     # grid (full and half levels)
+#     ax.set_yticks(full_levels, minor=False)
+#     ax.set_yticks(half_levels, minor=True)
+#     ax.yaxis.grid(which='major', color='#DDDDDD', linewidth=0.8)
+#     ax.yaxis.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
+# 
+# axs[0].set_ylabel(r"$v_n$")
+# axs[1].set_ylabel(r"$w$")
+# axs[2].set_ylabel(r"$\rho$")
+# axs[3].set_ylabel(r"$\pi$")
+# axs[4].set_ylabel(r"$\theta_v$")
+# #axs[0][0].set_ylim([90, 115])
+# plt.subplots_adjust(hspace=0.5, wspace=0.3)
+# plt.draw()
