@@ -42,12 +42,12 @@ with open(fname, "rb") as ifile:
     theta_v0 = state["theta_v"]
 
 #fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
-#fname = glob.glob(os.path.join(main_dir, run_name, "010322_end_of_timestep_??????.pkl"))[0]
+fname = glob.glob(os.path.join(main_dir, run_name, "000889_end_of_timestep_??????.pkl"))[0]
 #fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
 #fname = os.path.join(main_dir, run_name, "end_of_timestep_000000175.pkl")
 #fname = os.path.join(main_dir, run_name, "end_of_timestep_000180000.pkl")
 #fname = os.path.join(main_dir, run_name, "avgs/avg_hour020.pkl")
-fname = os.path.join(main_dir, run_name, "000002_channel.pkl")
+#fname = os.path.join(main_dir, run_name, "000002_channel.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -55,11 +55,11 @@ with open(fname, "rb") as ifile:
     rho = state["rho"]
     exner = state["exner"]
     theta_v = state["theta_v"]
-    sponge_full_cell = state["sponge_full_cell"]
-    sponge_half_cell = state["sponge_half_cell"]
-    sponge_full_edge = state["sponge_full_edge"]
-    vn = (1 - sponge_full_edge) * vn
-    w  = sponge_half_cell
+    #sponge_full_cell = state["sponge_full_cell"]
+    #sponge_half_cell = state["sponge_half_cell"]
+    #sponge_full_edge = state["sponge_full_edge"]
+    #vn = (1 - sponge_full_edge) * vn
+    #w  = (1 - sponge_half_cell) * w
 
 #-------------------------------------------------------------------------------
 # Vertical profiles (b)

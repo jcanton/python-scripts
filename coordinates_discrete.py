@@ -6,7 +6,7 @@ import coordinates_functions as cf
 #-------------------------------------------------------------------------------
 # Domain and topography
 #
-case_name = "hill_smooth"
+case_name = "teamx"
 
 match case_name:
     case "hill_small":
@@ -61,8 +61,28 @@ match case_name:
         lowest_layer_thickness = 20
         stretch_factor = 0.65
         num_levels = 80
+    case "teamx":
+        # TeamX cosine hill
+        nx = 1000
+        x0=0; x1=10240;
+        y0=0; y1=20480;
+        # hill topography
+        hh = 100
+        hx = (x0+x1)/2; hy = (y0+y1)/2;
+        # vertical coordinates
+        s1 = 250; s2 = 250;
+        Zt = 5000; flat_height = 3000;
+        lowest_layer_thickness = 10 # min layer thickness
+        stretch_factor = 1
+        num_levels = 250
 
 if "hill" in case_name:
+    hill = lambda x,y: hh * np.exp( -( (x - hx)**2 + (y - hy)**2 ) / hw**2 )
+    # discrete arrays
+    x_coords = np.linspace(x0,x1,nx)
+    y_coords = hy*np.ones(nx)
+    topography = hill(x_coords, y_coords)
+elif "teamx" in case_name:
     hill = lambda x,y: hh * np.exp( -( (x - hx)**2 + (y - hy)**2 ) / hw**2 )
     # discrete arrays
     x_coords = np.linspace(x0,x1,nx)
