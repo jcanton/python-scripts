@@ -2,7 +2,7 @@
 imgs*
 *.png
 testdata
-run*
+run??_*
 icon_grid*
 icon_extpar*
 
