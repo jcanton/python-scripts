@@ -68,10 +68,10 @@ match case_name:
         y0=0; y1=20480;
         # hill topography
         hh = 100
-        hx = (x0+x1)/2; hy = (y0+y1)/2;
+        wave_length = 512 * 20
         # vertical coordinates
-        s1 = 250; s2 = 250;
-        Zt = 5000; flat_height = 3000;
+        s1 = 3000; s2 = 350;
+        Zt = 5000; flat_height = 5000;
         lowest_layer_thickness = 10 # min layer thickness
         stretch_factor = 1
         num_levels = 250
@@ -83,10 +83,10 @@ if "hill" in case_name:
     y_coords = hy*np.ones(nx)
     topography = hill(x_coords, y_coords)
 elif "teamx" in case_name:
-    hill = lambda x,y: hh * np.exp( -( (x - hx)**2 + (y - hy)**2 ) / hw**2 )
+    hill = lambda x,y: hh/2 * (1 - np.cos(2*np.pi*x/wave_length))
     # discrete arrays
     x_coords = np.linspace(x0,x1,nx)
-    y_coords = hy*np.ones(nx)
+    y_coords = np.ones(nx)
     topography = hill(x_coords, y_coords)
 
 #-------------------------------------------------------------------------------
@@ -138,13 +138,13 @@ cc_ddqz_z = cf.compute_ddqz(vertical_coordinate=cc_z_ifc)
 #
 pX = np.tile(x_coords, (num_levels,1)).T
 
-# fig=plt.figure(1); plt.clf(); plt.show(block=False)
-# plt.plot(x_coords, topography,             "-",  color="black",  label="Topography")
-# plt.plot(x_coords, smoothed_topography,    "--", color="orange", label="Smoothed topography")
-# plt.plot(x_coords, small_scale_topography, ":",  color="blue",   label="Small-scale topo")
-# plt.legend()
-# plt.draw()
-# #plt.savefig("imgs/topography.png", bbox_inches="tight")
+fig=plt.figure(1); plt.clf(); plt.show(block=False)
+plt.plot(x_coords, topography,             "-",  color="black",  label="Topography")
+plt.plot(x_coords, smoothed_topography,    "--", color="orange", label="Smoothed topography")
+plt.plot(x_coords, small_scale_topography, ":",  color="blue",   label="Small-scale topo")
+plt.legend()
+plt.draw()
+#plt.savefig("imgs/topography.png", bbox_inches="tight")
 
 fig=plt.figure(2, figsize=(14,6)); plt.clf(); plt.show(block=False)
 (ax1, ax2, ax3) = fig.subplots(1, 3, sharex=True, sharey=True)
@@ -155,6 +155,7 @@ for k in range(num_levels+1):
     ax3.plot(x_coords, cc_z_ifc[:,k], "-",  color="blue")
 #ax1.set_aspect('equal')
 #ax2.set_aspect('equal')
+#ax1.set_ylim([0,3100])
 plt.draw()
 plt.savefig("imgs/z_ifc2.pdf", bbox_inches="tight")
 

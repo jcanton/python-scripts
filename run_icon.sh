@@ -116,7 +116,7 @@ export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
 export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
-export ICON_EXCLAIM_DIR=$PROJECTS_DIR/icon-exclaim
+export ICON_EXCLAIM_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
 
 # Unified output dir (per sim_type)
 export OUTPUT_DIR=$SCRATCH/runs/$sim_type/$SLURM_JOB_NAME
