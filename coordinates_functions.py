@@ -42,8 +42,7 @@ def compute_vct_a(
         # src/atm_dyn_iconam/mo_init_vgrid.f90  󰊕 init_sleve_coord  mo_init_vgrid
         d = np.log( lowest_layer_thickness / model_top) / np.log( 2.0 / np.pi * np.arccos( float(num_levels - 1) ** stretch_factor / float(num_levels) ** stretch_factor))
         vct_a = model_top * ( 2.0 / np.pi * np.arccos( np.arange(num_levels + 1, dtype=float) ** stretch_factor / float(num_levels) ** stretch_factor)) ** d
-        # limiters
-        import pdb; pdb.set_trace()
+        # limiter
         if (2 * lowest_layer_thickness
             < maximal_layer_thickness
             < 0.5 * top_height_limit_for_maximal_layer_thickness
