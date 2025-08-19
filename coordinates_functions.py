@@ -32,6 +32,8 @@ def smooth_topography(x_coords, topography):
 #-------------------------------------------------------------------------------
 def compute_vct_a(
     lowest_layer_thickness,
+    maximal_layer_thickness,
+    top_height_limit_for_maximal_layer_thickness,
     model_top,
     stretch_factor,
     num_levels,
@@ -40,8 +42,103 @@ def compute_vct_a(
         # src/atm_dyn_iconam/mo_init_vgrid.f90  󰊕 init_sleve_coord  mo_init_vgrid
         d = np.log( lowest_layer_thickness / model_top) / np.log( 2.0 / np.pi * np.arccos( float(num_levels - 1) ** stretch_factor / float(num_levels) ** stretch_factor))
         vct_a = model_top * ( 2.0 / np.pi * np.arccos( np.arange(num_levels + 1, dtype=float) ** stretch_factor / float(num_levels) ** stretch_factor)) ** d
+        # limiters
+        import pdb; pdb.set_trace()
+        if (2 * lowest_layer_thickness
+            < maximal_layer_thickness
+            < 0.5 * top_height_limit_for_maximal_layer_thickness
+                ):
+            layer_thickness = vct_a[:num_levels] - vct_a[1:]
+            lowest_level_exceeding_limit = np.max(np.where(layer_thickness > maximal_layer_thickness))
+            modified_vct_a = np.zeros(num_levels+1, dtype=float)
+            lowest_level_unmodified_thickness = 0
+            shifted_levels = 0
+            for k in range(num_levels - 1, -1, -1):
+                if ( modified_vct_a[k + 1] < top_height_limit_for_maximal_layer_thickness):
+                    modified_vct_a[k] = modified_vct_a[k + 1] + np.minimum(maximal_layer_thickness, layer_thickness[k])
+                elif lowest_level_unmodified_thickness == 0:
+                    lowest_level_unmodified_thickness = k + 1
+                    shifted_levels = max(
+                        0, lowest_level_exceeding_limit - lowest_level_unmodified_thickness
+                    )
+                    modified_vct_a[k] = modified_vct_a[k + 1] + layer_thickness[k + shifted_levels]
+                else:
+                    modified_vct_a[k] = modified_vct_a[k + 1] + layer_thickness[k + shifted_levels]
+
+            stretchfac = (
+                1.0
+                if shifted_levels == 0
+                else (
+                    vct_a[0]
+                    - modified_vct_a[lowest_level_unmodified_thickness]
+                    - float(lowest_level_unmodified_thickness)
+                    * maximal_layer_thickness
+                )
+                / (
+                    modified_vct_a[0]
+                    - modified_vct_a[lowest_level_unmodified_thickness]
+                    - float(lowest_level_unmodified_thickness)
+                    * maximal_layer_thickness
+                )
+            )
+
+            for k in range(num_levels - 1, -1, -1):
+                if vct_a[k + 1] < top_height_limit_for_maximal_layer_thickness:
+                    vct_a[k] = vct_a[k + 1] + np.minimum(
+                        maximal_layer_thickness, layer_thickness[k]
+                    )
+                else:
+                    vct_a[k] = (
+                        vct_a[k + 1]
+                        + maximal_layer_thickness
+                        + (
+                            layer_thickness[k + shifted_levels]
+                            - maximal_layer_thickness
+                        )
+                        * stretchfac
+                    )
+
+            # Try to apply additional smoothing on the stretching factor above the constant-thickness layer
+            if stretchfac != 1.0 and lowest_level_exceeding_limit < num_levels - 4:
+                for k in range(num_levels - 1, -1, -1):
+                    if (
+                        modified_vct_a[k + 1]
+                        < top_height_limit_for_maximal_layer_thickness
+                    ):
+                        modified_vct_a[k] = vct_a[k]
+                    else:
+                        modified_layer_thickness = np.minimum(
+                            1.025 * (vct_a[k] - vct_a[k + 1]),
+                            1.025
+                            * (
+                                modified_vct_a[lowest_level_exceeding_limit + 1]
+                                - modified_vct_a[lowest_level_exceeding_limit + 2]
+                            )
+                            / (
+                                modified_vct_a[lowest_level_exceeding_limit + 2]
+                                - modified_vct_a[lowest_level_exceeding_limit + 3]
+                            )
+                            * (modified_vct_a[k + 1] - modified_vct_a[k + 2]),
+                        )
+                        modified_vct_a[k] = np.minimum(
+                            vct_a[k], modified_vct_a[k + 1] + modified_layer_thickness
+                        )
+                if modified_vct_a[0] == vct_a[0]:
+                    vct_a[0:2] = modified_vct_a[0:2]
+                    vct_a[
+                        lowest_level_unmodified_thickness + 1 : num_levels
+                    ] = modified_vct_a[
+                        lowest_level_unmodified_thickness + 1 : num_levels
+                    ]
+                    vct_a[2 : lowest_level_unmodified_thickness + 1] = 0.5 * (
+                        modified_vct_a[1:lowest_level_unmodified_thickness]
+                        + modified_vct_a[3 : lowest_level_unmodified_thickness + 2]
+                    )
+
     else:
+        # uniform spacing
         vct_a = np.linspace(0, model_top, num_levels + 1)[::-1]
+
     return vct_a
 
 

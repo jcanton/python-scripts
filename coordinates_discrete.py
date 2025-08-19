@@ -1,6 +1,9 @@
+import importlib
 import pickle
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 import coordinates_functions as cf
 
 #-------------------------------------------------------------------------------
@@ -73,6 +76,8 @@ match case_name:
         s1 = 3000; s2 = 350;
         Zt = 5000; flat_height = 5000;
         lowest_layer_thickness = 10 # min layer thickness
+        maximal_layer_thickness = 10
+        top_height_limit_for_maximal_layer_thickness = 1000
         stretch_factor = 1
         num_levels = 250
 
@@ -99,8 +104,11 @@ small_scale_topography = topography - smoothed_topography
 #-------------------------------------------------------------------------------
 # Vertical coordinates
 
+importlib.reload(cf)
 vct_a = cf.compute_vct_a(
     lowest_layer_thickness=lowest_layer_thickness,
+    maximal_layer_thickness=maximal_layer_thickness,
+    top_height_limit_for_maximal_layer_thickness=top_height_limit_for_maximal_layer_thickness,
     model_top=Zt,
     stretch_factor=stretch_factor,
     num_levels=num_levels
@@ -157,7 +165,7 @@ for k in range(num_levels+1):
 #ax2.set_aspect('equal')
 #ax1.set_ylim([0,3100])
 plt.draw()
-plt.savefig("imgs/z_ifc2.pdf", bbox_inches="tight")
+#plt.savefig("imgs/z_ifc2.pdf", bbox_inches="tight")
 
 fig=plt.figure(3, figsize=(14,6)); plt.clf(); plt.show(block=False)
 cmax = ddqz_z.max()
@@ -171,3 +179,8 @@ cbar = plt.colorbar(im2)
 #ax2.set_aspect('equal')
 plt.draw()
 #plt.savefig("imgs/jacobian.png", bbox_inches="tight")
+
+fig=plt.figure(4); plt.clf(); plt.show(block=False)
+#plt.plot(vct_a, '-+')
+plt.plot(vct_a[:-1]-vct_a[1:], '-+')
+plt.draw()
