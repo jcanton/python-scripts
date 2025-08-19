@@ -78,7 +78,7 @@ match case_name:
         lowest_layer_thickness = 10 # min layer thickness
         maximal_layer_thickness = 10
         top_height_limit_for_maximal_layer_thickness = 1000
-        stretch_factor = 1
+        stretch_factor = 0.65
         num_levels = 250
 
 if "hill" in case_name:
@@ -154,7 +154,14 @@ plt.legend()
 plt.draw()
 #plt.savefig("imgs/topography.png", bbox_inches="tight")
 
-fig=plt.figure(2, figsize=(14,6)); plt.clf(); plt.show(block=False)
+fig=plt.figure(2); plt.clf(); plt.show(block=False)
+#plt.plot(vct_a, '-+')
+plt.plot(vct_a[:-1], vct_a[:-1]-vct_a[1:], '-+')
+plt.xlabel(r"Height [m]")
+plt.ylabel(r"Layer thickness $\Delta z$ [m]")
+plt.draw()
+
+fig=plt.figure(3, figsize=(14,6)); plt.clf(); plt.show(block=False)
 (ax1, ax2, ax3) = fig.subplots(1, 3, sharex=True, sharey=True)
 for k in range(num_levels+1):
     ax1.plot(x_coords,    z_ifc[:,k], "-",  color="black")
@@ -167,7 +174,7 @@ for k in range(num_levels+1):
 plt.draw()
 #plt.savefig("imgs/z_ifc2.pdf", bbox_inches="tight")
 
-fig=plt.figure(3, figsize=(14,6)); plt.clf(); plt.show(block=False)
+fig=plt.figure(4, figsize=(14,6)); plt.clf(); plt.show(block=False)
 cmax = ddqz_z.max()
 cmin = ddqz_z.min()
 (ax1, ax2) = fig.subplots(1, 2, sharex=True, sharey=True)
@@ -179,8 +186,3 @@ cbar = plt.colorbar(im2)
 #ax2.set_aspect('equal')
 plt.draw()
 #plt.savefig("imgs/jacobian.png", bbox_inches="tight")
-
-fig=plt.figure(4); plt.clf(); plt.show(block=False)
-#plt.plot(vct_a, '-+')
-plt.plot(vct_a[:-1]-vct_a[1:], '-+')
-plt.draw()
