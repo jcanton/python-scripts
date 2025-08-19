@@ -70,7 +70,7 @@ match case_name:
         x0=0; x1=10240;
         y0=0; y1=20480;
         # hill topography
-        hh = 100
+        hh = 1000
         wave_length = 512 * 20
         # vertical coordinates
         s1 = 3000; s2 = 350;
@@ -78,7 +78,7 @@ match case_name:
         lowest_layer_thickness = 10 # min layer thickness
         maximal_layer_thickness = 10
         top_height_limit_for_maximal_layer_thickness = 1000
-        stretch_factor = 0.65
+        stretch_factor = 1.0
         num_levels = 250
 
 if "hill" in case_name:
@@ -186,3 +186,10 @@ cbar = plt.colorbar(im2)
 #ax2.set_aspect('equal')
 plt.draw()
 #plt.savefig("imgs/jacobian.png", bbox_inches="tight")
+
+fig=plt.figure(5); plt.clf(); plt.show(block=False)
+plt.plot(z_mc[nx//2,:], cc_ddqz_z[nx//2,:], '-+')
+plt.title("Layer thickness in the middle of the domain")
+plt.xlabel(r"Height [m]")
+plt.ylabel(r"Layer thickness $\Delta z$ [m]")
+plt.draw()

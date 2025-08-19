@@ -38,7 +38,7 @@ def compute_vct_a(
     stretch_factor,
     num_levels,
 ):
-    if stretch_factor > 0:
+    if lowest_layer_thickness > 0.0:
         # src/atm_dyn_iconam/mo_init_vgrid.f90  󰊕 init_sleve_coord  mo_init_vgrid
         d = np.log( lowest_layer_thickness / model_top) / np.log( 2.0 / np.pi * np.arccos( float(num_levels - 1) ** stretch_factor / float(num_levels) ** stretch_factor))
         vct_a = model_top * ( 2.0 / np.pi * np.arccos( np.arange(num_levels + 1, dtype=float) ** stretch_factor / float(num_levels) ** stretch_factor)) ** d
