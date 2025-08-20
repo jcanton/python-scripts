@@ -193,7 +193,7 @@ if [ "$run_simulation" = true ]; then
     cat <<EOF >"$postpro_script"
 #!/bin/bash
 mv $ICONF90_DIR/${ICONF90_BUILD_FOLDER}/experiments/${ICONF90_EXPERIMENT_NAME}/* $OUTPUT_DIR/
-mv $ICONF90_DIR/${ICONF90_BUILD_FOLDER}/run/${logfile} $OUTPUT_DIR/
+mv $ICONF90_DIR/${ICONF90_BUILD_FOLDER}/run/${logfile} $OUTPUT_DIR/logfile.log
 EOF
     chmod +x "$postpro_script"
 
