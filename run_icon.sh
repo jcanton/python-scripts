@@ -3,7 +3,6 @@
 # =======================================
 # USER-EDITABLE: Slurm job parameters
 # =======================================
-SLURM_ACCOUNT="cwd01"
 SLURM_NODES=1
 
 SLURM_UENV="icon/25.2:v3"
@@ -12,7 +11,7 @@ SLURM_UENV_VIEW="default"
 SLURM_PARTITION="debug"
 SLURM_TIME="00:30:00"
 
-SLURM_JOBNAME="channel_950x350x100_5m_nlev20_leeMoser"
+SLURM_JOBNAME="test_teamx"
 
 # =======================================
 # USER-EDITABLE: Default run settings
@@ -20,7 +19,7 @@ SLURM_JOBNAME="channel_950x350x100_5m_nlev20_leeMoser"
 #   ./job.sh [sim_type] [run_simulation] [run_postprocess]
 #   sbatch job.sh [sim_type] [run_simulation] [run_postprocess]
 # =======================================
-sim_type="icon4py" # or "icon-exclaim"
+sim_type="icon4py" # or "icon-f90"
 run_simulation=true
 run_postprocess=false
 
@@ -34,14 +33,13 @@ if [ -n "$3" ]; then run_postprocess="$3"; fi
 #
 case $CLUSTER_NAME in
 balfrin)
+  SLURM_ACCOUNT="s83"
   export SCRATCH=/scratch/mch/jcanton
   export PROJECTS_DIR=$SCRATCH
   export ICON4PY_BACKEND="gtfn_gpu"
-  export SLURM_UENV_VIEW="$SLURM_UENV_VIEW,modules"
-  module load gcc-runtime
-  module load nvhpc
   ;;
 santis)
+  SLURM_ACCOUNT="cwd01"
   export SCRATCH=/capstor/scratch/cscs/jcanton
   export PROJECTS_DIR=$SCRATCH
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-tsfur7lqj6njogdqafhpmj5dqltish7t/Linux_aarch64/25.1/compilers/lib
@@ -72,6 +70,8 @@ if [ -z "$SLURM_JOB_ID" ]; then
   # Timestamp for unique log files
   timestamp=$(date +"%Y%m%d_%H%M%S")
 
+  SLURM_JOBNAME="${SLURM_JOBNAME}_${timestamp}"
+
   # Pick log suffix based on sim type + booleans
   if [ "$run_simulation" = true ] && [ "$run_postprocess" = true ]; then
     log_suffix="${sim_type}_both"
@@ -92,38 +92,35 @@ if [ -z "$SLURM_JOB_ID" ]; then
   # Ensure log dir exists
   mkdir -p "$SLURM_LOGDIR"
 
-  # Submit self to Slurm with parameters preserved
-  sbatch \
-    --account="$SLURM_ACCOUNT" \
-    --nodes="$SLURM_NODES" \
-    --uenv="$SLURM_UENV" \
-    --view="$SLURM_UENV_VIEW" \
-    --partition="$SLURM_PARTITION" \
-    --time="$SLURM_TIME" \
-    --job-name="$SLURM_JOBNAME" \
-    --output="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
-    --error="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
-    "$0" "$sim_type" "$run_simulation" "$run_postprocess"
-  exit
+  if [ "$sim_type" != "icon-f90" ]; then
+    # Submit self to Slurm with parameters preserved
+    sbatch \
+      --account="$SLURM_ACCOUNT" \
+      --nodes="$SLURM_NODES" \
+      --uenv="$SLURM_UENV" \
+      --view="$SLURM_UENV_VIEW" \
+      --partition="$SLURM_PARTITION" \
+      --time="$SLURM_TIME" \
+      --job-name="$SLURM_JOBNAME" \
+      --output="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
+      --error="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
+      "$0" "$sim_type" "$run_simulation" "$run_postprocess"
+    exit
+  fi
 fi
 
 # ==============================================================================
 # Environment setup
 #
-export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
-export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
 export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
-export ICON_EXCLAIM_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
+export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
 
 # Unified output dir (per sim_type)
-export OUTPUT_DIR=$SCRATCH/runs/$sim_type/$SLURM_JOB_NAME
+export OUTPUT_DIR=$SCRATCH/runs/$sim_type/$SLURM_JOBNAME
 mkdir -p "$OUTPUT_DIR"
-
-# For icon4py, use environment variable (driver has no --output_dir)
-export ICON4PY_OUTPUT_DIR="$OUTPUT_DIR"
 
 echo ""
 echo "Running on cluster   = $CLUSTER_NAME"
@@ -150,6 +147,10 @@ if [ "$run_simulation" = true ]; then
     export GT4PY_BUILD_CACHE_LIFETIME=persistent
     export GT4PY_BUILD_CACHE_DIR=$SCRATCH/gt4py_cache
 
+    export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
+    export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
+    export ICON4PY_OUTPUT_DIR="$OUTPUT_DIR"
+
     python \
       model/driver/src/icon4py/model/driver/icon4py_driver.py \
       $ICON4PY_SAVEPOINT_PATH \
@@ -159,31 +160,53 @@ if [ "$run_simulation" = true ]; then
       --enable_output
     ;;
 
-  icon-exclaim)
-    echo "[INFO] Preparing and running icon-exclaim simulation..."
+  icon-f90)
+    echo "[INFO] Preparing and running icon-f90 simulation..."
 
-    experiment_name="exclaim_channel"
-    build_folder="build_acc"
+    ICONF90_EXPERIMENT_NAME="teamx_intercomparison"
+    ICONF90_BUILD_FOLDER="build_acc"
 
-    cd "$ICON_EXCLAIM_DIR" || exit
-    cp run/exp.${experiment_name} ${build_folder}/run/
+    cd "$ICONF90_DIR" || exit
+    cp run/exp.${ICONF90_EXPERIMENT_NAME} ${ICONF90_BUILD_FOLDER}/run/
 
-    cd ${build_folder} || exit
-    ./make_runscripts ${experiment_name}
-
-    rm -rf experiments/${experiment_name}/*
-    rm -f run/LOG.exp.${experiment_name}.run.*
+    cd ${ICONF90_BUILD_FOLDER} || exit
+    ./make_runscripts ${ICONF90_EXPERIMENT_NAME}
 
     cd run || exit
 
-    # run the experiment script directly under current allocation
-    echo "[INFO] Launching icon-exclaim with srun..."
-    srun ./exp.${experiment_name}.run
+    # add/fix slurm stuff
+    sed -i '/#SBATCH --job-name=/i #SBATCH --uenv='"$SLURM_UENV" exp.${ICONF90_EXPERIMENT_NAME}.run
+    sed -i '/#SBATCH --job-name=/i #SBATCH --view='"$SLURM_UENV_VIEW" exp.${ICONF90_EXPERIMENT_NAME}.run
+    sed -i '/#SBATCH --job-name=/i #SBATCH --account='"$SLURM_ACCOUNT" exp.${ICONF90_EXPERIMENT_NAME}.run
+    sed -i '/#SBATCH --job-name=/i #SBATCH --time='"$SLURM_TIME" exp.${ICONF90_EXPERIMENT_NAME}.run
+    sed -i '/#SBATCH --partition=/c\#SBATCH --partition='"$SLURM_PARTITION" exp.${ICONF90_EXPERIMENT_NAME}.run
+    sed -i '/#SBATCH --nodes=/c\#SBATCH --nodes='"$SLURM_NODES" exp.${ICONF90_EXPERIMENT_NAME}.run
 
-    # collect logs + outputs into unified output dir
-    mkdir -p "$OUTPUT_DIR"
-    cp LOG.exp.${experiment_name}.run.* "$OUTPUT_DIR"/
-    cp -r ../experiments/${experiment_name}/* "$OUTPUT_DIR"/
+    # submit the experiment
+    echo "[INFO] Queuing icon-f90 with sbatch..."
+    output=$(sbatch exp.${ICONF90_EXPERIMENT_NAME}.run)
+    job_id=$(echo "$output" | awk '{print $4}')
+    logfile="LOG.exp.${ICONF90_EXPERIMENT_NAME}.run.${job_id}.o"
+
+    # create postpro job
+    postpro_script="move_outputs_${ICONF90_EXPERIMENT_NAME}.sh"
+    cat <<EOF >"$postpro_script"
+#!/bin/bash
+mv $ICONF90_DIR/${ICONF90_BUILD_FOLDER}/experiments/${ICONF90_EXPERIMENT_NAME}/* $OUTPUT_DIR/
+mv $ICONF90_DIR/${ICONF90_BUILD_FOLDER}/run/${logfile} $OUTPUT_DIR/
+EOF
+    chmod +x "$postpro_script"
+
+    # submit postpro job
+    sbatch \
+      --account="$SLURM_ACCOUNT" \
+      --partition=debug \
+      --time=00:10:00 \
+      --dependency=afterany:"${job_id}" \
+      --job-name="move_outputs_${ICONF90_EXPERIMENT_NAME}" \
+      --output="postpro.log" \
+      --error="postpro.log" \
+      "$postpro_script"
     ;;
   esac
 fi
@@ -207,6 +230,3 @@ if [ "$run_postprocess" = true ]; then
     echo "[WARN] No postprocessing pipeline defined for $sim_type"
   fi
 fi
-
-# ==============================================================================
-echo "Finished running job: $SLURM_JOB_NAME"
