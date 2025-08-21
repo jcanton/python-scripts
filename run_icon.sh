@@ -164,7 +164,7 @@ if [ "$run_simulation" = true ]; then
     echo "[INFO] Preparing and running icon-f90 simulation..."
 
     ICONF90_EXPERIMENT_NAME="teamx_intercomparison"
-    ICONF90_BUILD_FOLDER="build_acc"
+    ICONF90_BUILD_FOLDER="build_cpu"
 
     cd "$ICONF90_DIR" || exit
     cp run/exp.${ICONF90_EXPERIMENT_NAME} ${ICONF90_BUILD_FOLDER}/run/
@@ -181,12 +181,17 @@ if [ "$run_simulation" = true ]; then
     sed -i '/#SBATCH --job-name=/i #SBATCH --time='"$SLURM_TIME" exp.${ICONF90_EXPERIMENT_NAME}.run
     sed -i '/#SBATCH --partition=/c\#SBATCH --partition='"$SLURM_PARTITION" exp.${ICONF90_EXPERIMENT_NAME}.run
     sed -i '/#SBATCH --nodes=/c\#SBATCH --nodes='"$SLURM_NODES" exp.${ICONF90_EXPERIMENT_NAME}.run
+    #sed -i '/#SBATCH --ntasks-per-node=/c\#SBATCH --ntasks-per-node=4' exp.${ICONF90_EXPERIMENT_NAME}.run
+    #sed -i '/export mpi_procs_pernode/c\export mpi_procs_pernode=4' exp.${ICONF90_EXPERIMENT_NAME}.run
 
     # submit the experiment
     echo "[INFO] Queuing icon-f90 with sbatch..."
     output=$(sbatch exp.${ICONF90_EXPERIMENT_NAME}.run)
     job_id=$(echo "$output" | awk '{print $4}')
     logfile="LOG.exp.${ICONF90_EXPERIMENT_NAME}.run.${job_id}.o"
+
+    rm logfile.log
+    ln -s "$logfile" logfile.log
 
     # create postpro job
     postpro_script="move_outputs_${ICONF90_EXPERIMENT_NAME}.sh"
