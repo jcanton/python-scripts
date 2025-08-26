@@ -4,6 +4,7 @@ import pickle
 import sys
 from concurrent.futures import ProcessPoolExecutor
 
+import gt4py.next as gtx
 import numpy as np
 from icon4py.model.common.io import plots
 
