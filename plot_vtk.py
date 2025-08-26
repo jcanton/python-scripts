@@ -12,6 +12,7 @@ from scipy.interpolate import griddata
 
 try:
     from icon4py.model.atmosphere.dycore import ibm
+
     do_ibm = True
 except ImportError:
     do_ibm = False
@@ -35,9 +36,9 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     cell_centres = np.column_stack((tri.cell_x, tri.cell_y))
     vertices = np.column_stack((tri.x, tri.y))
     for k in range(num_half_levels):
-        z_cells = half_level_heights[:,k]
-        z_verts = griddata(cell_centres, z_cells, vertices, method='linear')
-        z_verts_fill = griddata(cell_centres, z_cells, vertices, method='nearest')
+        z_cells = half_level_heights[:, k]
+        z_verts = griddata(cell_centres, z_cells, vertices, method="linear")
+        z_verts_fill = griddata(cell_centres, z_cells, vertices, method="nearest")
         z_verts = np.where(np.isnan(z_verts), z_verts_fill, z_verts)
         for i in range(num_vertices):
             points.append([tri.x[i], tri.y[i], z_verts[i]])
@@ -47,7 +48,7 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     # Each wedge is formed by connecting a triangle at level k and k+1
     wedges = []
     unmasked_cell_indices = []
-    mask = getattr(tri, 'mask', None)
+    mask = getattr(tri, "mask", None)
     for cell_id, (v0, v1, v2) in enumerate(tri.triangles):
         if mask is not None and mask[cell_id]:
             continue  # skip masked triangles
@@ -82,7 +83,7 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
                 # Flatten to (num_cells * num_levels, 3)
                 cell_data[name] = [arr3d.reshape(-1, 3)]
             elif arr_unmasked.ndim == 2:
-                if arr_unmasked.shape[1] == num_half_levels-1:
+                if arr_unmasked.shape[1] == num_half_levels - 1:
                     # Data defined on full levels (wedge centers)
                     arr3d = arr_unmasked[:, :]
                 else:
@@ -92,7 +93,9 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
                     arr3d = arr_unmasked[:, :-1]
                 cell_data[name] = [arr3d.flatten()]
             else:
-                raise ValueError(f"Unsupported cell data shape for '{name}': {arr.shape}")
+                raise ValueError(
+                    f"Unsupported cell data shape for '{name}': {arr.shape}"
+                )
         else:
             raise ValueError(f"Unsupported data shape for '{name}': {arr.shape}")
 
@@ -105,6 +108,7 @@ def export_vtk(tri, half_level_heights: np.ndarray, filename: str, data: dict):
     )
     meshio.write(filename, mesh, file_format="vtu")
 
+
 def process_file(args):
     # NOTE: plot and _ibm must be created in each process, as they are not picklable.
     file_path, out_path, savepoint_path, grid_file_path = args
@@ -113,11 +117,15 @@ def process_file(args):
 
     with open(file_path, "rb") as f:
         state = pickle.load(f)
-    data_rho     = state["rho"]
+    data_rho = state["rho"]
     data_theta_v = state["theta_v"]
-    data_exner   = state["exner"]
-    data_w       = state['w']
-    data_vn      = state['vn']
+    data_exner = state["exner"]
+    data_w = state["w"]
+    data_vn = state["vn"]
+    if "sponge_full_cell" in state:
+        data_sponge_fc = state["sponge_full_cell"]
+    else:
+        data_sponge_fc = None
 
     plot = plots.Plot(
         savepoint_path=savepoint_path,
@@ -132,51 +140,70 @@ def process_file(args):
             backend=gtx.gtfn_cpu,
         )
 
-    filename = os.path.basename(file_path).split('.')[0]
+    filename = os.path.basename(file_path).split(".")[0]
     print(f"Plotting {filename}")
 
     u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
     w_cf = plot._scal_interpolate_to_full_levels(data_w)
     vort_cf = plot._compute_vorticity(data_vn)
+    output_dict = {
+        "rho": data_rho,
+        "theta_v": data_theta_v,
+        "exner": data_exner,
+        "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
+        "vort_cf": vort_cf,
+    }
+    if do_ibm:
+        output_dict["cell_mask"] = _ibm.full_cell_mask.asnumpy().astype(float)
+    if data_sponge_fc is not None:
+        output_dict["sponge_fc"] = data_sponge_fc
+
     export_vtk(
         tri=plot.tri,
         half_level_heights=plot.half_level_heights,
         filename=out_path,
-        data={
-            "rho":     data_rho,
-            "theta_v": data_theta_v,
-            "exner":   data_exner,
-            #"vn": data_vn,
-            #"w": data_w,
-            "wind_cf": np.stack([u_cf, v_cf, w_cf], axis=-1),
-            "vort_cf": vort_cf,
-            "cell_mask": _ibm.full_cell_mask.asnumpy().astype(float) if do_ibm else None,
-        }
+        data=output_dict,
     )
+
 
 # ===============================================================================
 if __name__ == "__main__":
-
     if len(sys.argv) < 5:
-        print("Usage: python plot_vtk.py <num_workers> <python_files_dir> <savepoint_path> <grid_file_path>")
+        print(
+            "Usage: python plot_vtk.py <num_workers> <python_files_dir> <savepoint_path> <grid_file_path>"
+        )
         sys.exit(1)
     num_workers = int(sys.argv[1])
     output_files_dir = sys.argv[2]
     savepoint_path = sys.argv[3]
     grid_file_path = sys.argv[4]
 
-    vtks_dir = os.path.join(output_files_dir, 'vtks')
+    vtks_dir = os.path.join(output_files_dir, "vtks")
     if not os.path.exists(vtks_dir):
         os.makedirs(vtks_dir)
 
-    output_files = glob.glob(os.path.join(output_files_dir, '??????_end_of_timestep_??????.pkl'))
+    output_files = glob.glob(
+        os.path.join(output_files_dir, "??????_end_of_timestep_*pkl")
+    )
+    output_files += glob.glob(
+        os.path.join(output_files_dir, "?????_initial_condition*.pkl")
+    )
+    output_files += glob.glob(os.path.join(output_files_dir, "?????_debug_*.pkl"))
     if len(output_files) == 0:
-        output_files = glob.glob(os.path.join(output_files_dir, 'end_of_timestep_*.pkl'))
+        output_files = glob.glob(
+            os.path.join(output_files_dir, "end_of_timestep_*.pkl")
+        )
     output_files.sort()
 
+    print("")
+    print(f"Using {num_workers} workers")
+    print(f"Output files directory: {output_files_dir}")
+    print(f"Savepoint path: {savepoint_path}")
+    print(f"Grid file path: {grid_file_path}")
     print(f"Found {len(output_files)} output files in {output_files_dir}")
+    print("")
 
-    fileLabel = lambda file_path: file_path.split('/')[-1].split('.')[0][7:]
+    fileLabel = lambda file_path: file_path.split("/")[-1].split(".")[0][7:]
 
     # Prepare arguments for each file
     tasks = []
@@ -187,4 +214,3 @@ if __name__ == "__main__":
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         list(executor.map(process_file, tasks))
-
