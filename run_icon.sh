@@ -8,10 +8,14 @@ SLURM_NODES=1
 SLURM_UENV="icon/25.2:v3"
 SLURM_UENV_VIEW="default"
 
-SLURM_PARTITION="debug"
-SLURM_TIME="00:30:00"
+SLURM_PARTITION="normal"
+SLURM_TIME="1-00:00:00"
 
-SLURM_JOBNAME="test_teamx"
+#SLURM_JOBNAME="channel_950m_x_350m_res5m_nlev20"
+#SLURM_JOBNAME="channel_950m_x_350m_res2.5m_nlev40"
+#SLURM_JOBNAME="channel_950m_x_350m_res1.5m_nlev64"
+#SLURM_JOBNAME="channel_950m_x_350m_res1.25m_nlev80"
+#SLURM_JOBNAME="channel_950m_x_350m_res1m_nlev100"
 
 # =======================================
 # USER-EDITABLE: Default run settings
@@ -70,7 +74,7 @@ if [ -z "$SLURM_JOB_ID" ]; then
   # Timestamp for unique log files
   timestamp=$(date +"%Y%m%d_%H%M%S")
 
-  SLURM_JOBNAME="${SLURM_JOBNAME}_${timestamp}"
+  #SLURM_JOBNAME="${SLURM_JOBNAME}_${timestamp}"
 
   # Pick log suffix based on sim type + booleans
   if [ "$run_simulation" = true ] && [ "$run_postprocess" = true ]; then
@@ -118,6 +122,52 @@ export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
 export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
 
+# python
+case $SLURM_JOBNAME in
+*res5m*)
+  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
+  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
+  export ICON4PY_PLOT_FREQUENCY=1500
+  export ICON4PY_NUM_LEVELS=20
+  export ICON4PY_DTIME=0.04
+  ;;
+*res2.5m*)
+  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_2.5m_nlev40/ser_data"
+  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res2.5m.nc"
+  export ICON4PY_PLOT_FREQUENCY=3000
+  export ICON4PY_NUM_LEVELS=40
+  export ICON4PY_DTIME=0.02
+  ;;
+*res1.5m*)
+  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
+  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
+  export ICON4PY_PLOT_FREQUENCY=6000
+  export ICON4PY_NUM_LEVELS=64
+  export ICON4PY_DTIME=0.01
+  ;;
+*res1.25m*)
+  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1.25m_nlev80/ser_data"
+  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.25m.nc"
+  export ICON4PY_PLOT_FREQUENCY=6000
+  export ICON4PY_NUM_LEVELS=80
+  export ICON4PY_DTIME=0.01
+  ;;
+*res1m*)
+  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1m_nlev100/ser_data"
+  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1m.nc"
+  export ICON4PY_PLOT_FREQUENCY=6000
+  export ICON4PY_NUM_LEVELS=100
+  export ICON4PY_DTIME=0.01
+  ;;
+*)
+  echo "invalid jobname"
+  ;;
+esac
+
+# fortran
+export ICONF90_EXPERIMENT_NAME="teamx_intercomparison"
+export ICONF90_BUILD_FOLDER="build_cpu"
+
 # Unified output dir (per sim_type)
 export OUTPUT_DIR=$SCRATCH/runs/$sim_type/$SLURM_JOBNAME
 mkdir -p "$OUTPUT_DIR"
@@ -147,8 +197,6 @@ if [ "$run_simulation" = true ]; then
     export GT4PY_BUILD_CACHE_LIFETIME=persistent
     export GT4PY_BUILD_CACHE_DIR=$SCRATCH/gt4py_cache
 
-    export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
-    export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
     export ICON4PY_OUTPUT_DIR="$OUTPUT_DIR"
 
     python \
@@ -162,9 +210,6 @@ if [ "$run_simulation" = true ]; then
 
   icon-f90)
     echo "[INFO] Preparing and running icon-f90 simulation..."
-
-    ICONF90_EXPERIMENT_NAME="teamx_intercomparison"
-    ICONF90_BUILD_FOLDER="build_cpu"
 
     cd "$ICONF90_DIR" || exit
     cp run/exp.${ICONF90_EXPERIMENT_NAME} ${ICONF90_BUILD_FOLDER}/run/
@@ -230,7 +275,7 @@ if [ "$run_postprocess" = true ]; then
     python "$SCRIPTS_DIR/plot_vtk.py" "$TOTAL_WORKERS" "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
 
     # compute temporal averages
-    python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS" "$OUTPUT_DIR"
+    python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS" "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
   else
     echo "[WARN] No postprocessing pipeline defined for $sim_type"
   fi

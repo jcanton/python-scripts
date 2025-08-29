@@ -14,9 +14,18 @@ main_dir = os.getcwd() + "/../icon4py/"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_250m_x_250m_res2.5m.nc"
 #savepoint_path = main_dir + "ser_data/exclaim_gauss3d_250x250.uniform400_flat/ser_data/"
 
-grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
-savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
+#grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
+#savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
+#grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res2.5m.nc"
+#savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_2.5m_nlev40/ser_data"
+#grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
+#savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
+#grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.25m.nc"
+#savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1.25m_nlev80/ser_data"
+grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1m.nc"
+savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1m_nlev100/ser_data"
 
+importlib.reload(plots)
 plot = plots.Plot(
     savepoint_path=savepoint_path,
     grid_file_path=grid_file_path,
@@ -34,11 +43,12 @@ _ibm = ibm.ImmersedBoundaryMethod(
 data = _ibm.full_cell_mask.asnumpy().astype(float)[:,-1]
 
 plt.figure(1); plt.clf(); plt.show(block=False)
-plt.tripcolor(plot.tri, data, edgecolor='black', shading='flat')
+plt.tripcolor(plot.tri, data, edgecolor='none', shading='flat')
 #plt.xticks(np.arange(0,1000,50))
 #plt.yticks(np.arange(0,1000,50))
 plt.xticks(np.arange(0,1000,50))
 plt.yticks(np.arange(0, 400,50))
+plt.axis('equal')
 plt.draw()
-plt.savefig("ibm_masked_cells.png", dpi=600)
+plt.savefig("ibm_masked_cells.png", dpi=1200)
 

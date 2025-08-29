@@ -24,11 +24,14 @@ with open("./data/plotting_channel_950x350x100_5m_nlev20.pkl", "rb") as f:
 full_levels = full_level_heights[0,:]
 half_levels = half_level_heights[0,:]
 
+num_cells = len(tri.cell_x)
+num_levels = len(full_levels)
+
 #-------------------------------------------------------------------------------
 # Load data
 #
-main_dir = "../runs_icon4py"
-run_name = "channel_950x350x100_5m_nlev20_leeMoser"
+main_dir = "../runs/icon4py/"
+run_name = "channel_950m_x_350m_res5m_nlev20"
 
 #fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
 #fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
@@ -42,12 +45,13 @@ with open(fname, "rb") as ifile:
     theta_v0 = state["theta_v"]
 
 #fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
-fname = glob.glob(os.path.join(main_dir, run_name, "000889_end_of_timestep_??????.pkl"))[0]
+#fname = os.path.join(main_dir, run_name, "000002_end_of_predictor.pkl")
+#fname = glob.glob(os.path.join(main_dir, run_name, "000121_end_of_timestep_??????.pkl"))[0]
+fname = glob.glob(os.path.join(main_dir, run_name, "000400_*.pkl"))[0]
+#fname = os.path.join(main_dir, run_name, "000000_debug_channel_fields.pkl")
 #fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
 #fname = os.path.join(main_dir, run_name, "end_of_timestep_000000175.pkl")
-#fname = os.path.join(main_dir, run_name, "end_of_timestep_000180000.pkl")
 #fname = os.path.join(main_dir, run_name, "avgs/avg_hour020.pkl")
-#fname = os.path.join(main_dir, run_name, "000002_channel.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn = state["vn"]
@@ -55,11 +59,9 @@ with open(fname, "rb") as ifile:
     rho = state["rho"]
     exner = state["exner"]
     theta_v = state["theta_v"]
-    #sponge_full_cell = state["sponge_full_cell"]
-    #sponge_half_cell = state["sponge_half_cell"]
-    #sponge_full_edge = state["sponge_full_edge"]
-    #vn = (1 - sponge_full_edge) * vn
-    #w  = (1 - sponge_half_cell) * w
+    # sponge_full_cell = state["sponge_full_cell"]
+    # c_vn = vn.copy()
+    # c_w  = w.copy()
 
 #-------------------------------------------------------------------------------
 # Vertical profiles (b)
@@ -68,7 +70,7 @@ x0 = [0, 50] # beginning of channel
 #x0 = [130, 180] # cube leading edge
 #x0 = [180, 230] # cube trailing edge
 #x0 = [330, 380] # middle of nowhere
-x0 = [900, 950] # end of channel
+x0 = [850, 950] # end of channel
 y0 = 175
 
 # pick edge indexes
@@ -151,7 +153,7 @@ plt.subplots_adjust(hspace=0.5, wspace=0.3)
 plt.draw()
 
 # # ==============================================================================
-# # temporal average
+# # spatio-temporal average
 # fig = plt.figure(3); plt.clf(); plt.show(block=False)
 # fig.suptitle(fname)
 # axs = fig.subplots(nrows=5, ncols=1, sharex=False, sharey=True)
@@ -183,3 +185,46 @@ plt.draw()
 # #axs[0][0].set_ylim([90, 115])
 # plt.subplots_adjust(hspace=0.5, wspace=0.3)
 # plt.draw()
+
+# ==============================================================================
+# PALM verification
+#
+fnames = glob.glob(os.path.join(main_dir, run_name, "avgs/avg_hour???.pkl"))
+fnames.sort()
+u_cf = np.zeros((num_cells, num_levels))
+for fname in fnames[2:]:
+    with open(fname, "rb") as ifile:
+        state = pickle.load(ifile)
+        wind_cf = state["wind_cf"]
+    u_cf += wind_cf[:, :, 0]
+    #v_cf = wind_cf[:, :, 1]
+    #w_cf = wind_cf[:, :, 2]
+u_cf /= (len(fnames) - 2)
+
+H   = 50
+xH  = 3*H
+x0s = [xH - H, xH + 0.5*H, xH + H, xH + 1.5*H, xH + 2.5*H, xH + 4*H]
+y0  = 175
+
+# pick cell indexes
+c_idxs = []
+for x0 in x0s:
+    c_dist = ((tri.cell_x - x0)**2 + (tri.cell_y - y0)**2 )**0.5
+    c_idx = np.argmin(c_dist)
+    c_idxs.append(c_idx)
+
+fig = plt.figure(4); plt.clf(); plt.show(block=False)
+axs = fig.subplots(nrows=1, ncols=len(x0s), sharex=True, sharey=True)
+for ix, x0 in enumerate(x0s):
+    axs[ix].plot(u_cf[c_idxs[ix],:], full_levels/H, '-o',  ms=4)
+    axs[ix].plot([0,0],[0,2], '-k')
+    axs[ix].set_xlabel(r"$U / U_B$")
+    axs[ix].set_title(fr"$x / H = {(x0-xH)/H:.1f}$")
+    axs[ix].set_aspect('equal')
+
+axs[0].set_ylabel(r"$y / H$")
+axs[0].set_xlim([-0.7, 1.5])
+axs[0].set_ylim([ 0.0, 2.0])
+axs[0].set_xticks(np.arange(-0.5, 2.0, 0.5))
+plt.subplots_adjust(hspace=0.5, wspace=0.3)
+plt.draw()
