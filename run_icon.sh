@@ -123,6 +123,7 @@ export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
 export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
 
 # python
+export ICON4PY_RESTART_FREQUENCY=10000
 case $SLURM_JOBNAME in
 *res5m*)
   export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
