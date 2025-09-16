@@ -14,8 +14,16 @@ from icon4py.model.common.io import plots
 #ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_gauss3d_250x250x250.uniform200_flat/ser_data"
 #ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Torus_Triangles_250m_x_250m_res1.25m.nc"
 
-ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
-ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
+#ICON4PY_GRID_FILE_PATH = "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
+#ICON4PY_SAVEPOINT_PATH = "ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
+#ICON4PY_GRID_FILE_PATH = "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res2.5m.nc"
+#ICON4PY_SAVEPOINT_PATH = "ser_data/exclaim_channel_950x350x100_2.5m_nlev40/ser_data"
+#ICON4PY_GRID_FILE_PATH = "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
+#ICON4PY_SAVEPOINT_PATH = "ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
+#ICON4PY_GRID_FILE_PATH = "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.25m.nc"
+#ICON4PY_SAVEPOINT_PATH = "ser_data/exclaim_channel_950x350x100_1.25m_nlev80/ser_data"
+ICON4PY_GRID_FILE_PATH = "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1m.nc"
+ICON4PY_SAVEPOINT_PATH = "ser_data/exclaim_channel_950x350x100_1m_nlev100/ser_data"
 
 icon4py_dir = os.path.join(os.getcwd(), "../icon4py")
 grid_file_path = os.path.join(icon4py_dir, ICON4PY_GRID_FILE_PATH)
@@ -51,7 +59,11 @@ del tri._cpp_triangulation
 
 #with open("data/plotting_250x250x1000_2.5.pkl", "wb") as f:
 #with open("data/plotting_250x250x250_1.25.pkl", "wb") as f:
-with open("data/plotting_channel_950x350x100_5m_nlev20.pkl", "wb") as f:
+#with open("data/plotting_channel_950x350x100_5m_nlev20.pkl", "wb") as f:
+#with open("data/plotting_channel_950x350x100_2.5m_nlev40.pkl", "wb") as f:
+#with open("data/plotting_channel_950x350x100_1.5m_nlev64.pkl", "wb") as f:
+#with open("data/plotting_channel_950x350x100_1.25m_nlev80.pkl", "wb") as f:
+with open("data/plotting_channel_950x350x100_1m_nlev100.pkl", "wb") as f:
     pickle.dump({
         "tri": tri,
         "full_level_heights": full_level_heights,

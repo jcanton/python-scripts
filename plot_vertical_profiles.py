@@ -13,6 +13,7 @@ dx = 5
 #with open("./data/plotting_250x250x1000_2.5.pkl", "rb") as f:
 #with open("./data/plotting_250x250x250_1.25.pkl", "rb") as f:
 with open("./data/plotting_channel_950x350x100_5m_nlev20.pkl", "rb") as f:
+#with open("./data/plotting_channel_950x350x100_2.5m_nlev40.pkl", "rb") as f:
     plotting = pickle.load(f)
     tri = plotting["tri"]
     full_level_heights = plotting["full_level_heights"]
@@ -27,15 +28,21 @@ half_levels = half_level_heights[0,:]
 num_cells = len(tri.cell_x)
 num_levels = len(full_levels)
 
+# 5:   (20*3600+30*60)/706499 = .10 |  13500x20 =   270_000
+# 2.5: (19*3600+15*60)/539999 = .12 |  53000x40 = 2_120_000
+# 1.5: (15*3600+30*60)/41999  = 1.3 | 148452x64 = 9_500_928
+
 #-------------------------------------------------------------------------------
 # Load data
 #
 main_dir = "../runs/icon4py/"
 run_name = "channel_950m_x_350m_res5m_nlev20"
+#run_name = "channel_950m_x_350m_res2.5m_nlev40"
 
 #fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
 #fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
-fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
+#fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
+fname = os.path.join(main_dir, run_name, "initial_condition_ibm.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
     vn0 = state["vn"]
@@ -47,10 +54,10 @@ with open(fname, "rb") as ifile:
 #fname = os.path.join(main_dir, run_name, "000001_initial_condition_ibm.pkl")
 #fname = os.path.join(main_dir, run_name, "000002_end_of_predictor.pkl")
 #fname = glob.glob(os.path.join(main_dir, run_name, "000121_end_of_timestep_??????.pkl"))[0]
-fname = glob.glob(os.path.join(main_dir, run_name, "000400_*.pkl"))[0]
+#fname = glob.glob(os.path.join(main_dir, run_name, "000400_*.pkl"))[0]
 #fname = os.path.join(main_dir, run_name, "000000_debug_channel_fields.pkl")
 #fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
-#fname = os.path.join(main_dir, run_name, "end_of_timestep_000000175.pkl")
+fname = os.path.join(main_dir, run_name, "end_of_timestep_000005999.pkl")
 #fname = os.path.join(main_dir, run_name, "avgs/avg_hour020.pkl")
 with open(fname, "rb") as ifile:
     state = pickle.load(ifile)
@@ -66,12 +73,12 @@ with open(fname, "rb") as ifile:
 #-------------------------------------------------------------------------------
 # Vertical profiles (b)
 #
-x0 = [0, 50] # beginning of channel
+#x0 = [0, 50] # beginning of channel
 #x0 = [130, 180] # cube leading edge
-#x0 = [180, 230] # cube trailing edge
+x0 = [190, 210] #[180, 230] # cube trailing edge
 #x0 = [330, 380] # middle of nowhere
-x0 = [850, 950] # end of channel
-y0 = 175
+#x0 = [850, 950] # end of channel
+y0 = 176 # 175
 
 # pick edge indexes
 e_dist = ((tri.edge_y-y0)**2 )**0.5
@@ -120,14 +127,14 @@ for i in range(n_points):
 
     axs[1][i].plot(w [c_idxs[i],:], half_levels, '-o',  ms=4)
 
-    axs[2][i].plot(rho[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--o', ms=4)
+    #axs[2][i].plot(rho[c_idxs[i],:], full_levels, '-o', ms=4)
+    axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--o', ms=4)
 
-    axs[3][i].plot(exner[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--o', ms=4)
+    #axs[3][i].plot(exner[c_idxs[i],:], full_levels, '-o', ms=4)
+    axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--o', ms=4)
 
-    axs[4][i].plot(theta_v[c_idxs[i],:], full_levels, '-o', ms=4)
-    #axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--o', ms=4)
+    #axs[4][i].plot(theta_v[c_idxs[i],:], full_levels, '-o', ms=4)
+    axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--o', ms=4)
 
     for iax, ax in enumerate(axs):
         # ibm masks
