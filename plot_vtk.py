@@ -122,6 +122,16 @@ def process_file(args):
     data_exner = state["exner"]
     data_w = state["w"]
     data_vn = state["vn"]
+
+    initial_condition_path = os.path.join(os.path.dirname(file_path), "initial_condition.pkl")
+    found_ic = os.path.exists(initial_condition_path)
+    if found_ic:
+        with open(file_path, "rb") as f:
+            state = pickle.load(f)
+        ic_rho = state["rho"]
+        ic_theta_v = state["theta_v"]
+        ic_exner = state["exner"]
+
     if "sponge_full_cell" in state:
         data_sponge_fc = state["sponge_full_cell"]
     else:
@@ -157,6 +167,10 @@ def process_file(args):
         output_dict["cell_mask"] = _ibm.full_cell_mask.asnumpy().astype(float)
     if data_sponge_fc is not None:
         output_dict["sponge_fc"] = data_sponge_fc
+    if found_ic:
+        output_dict["rho_pert"] = data_rho - ic_rho
+        output_dict["theta_v_pert"] = data_theta_v - ic_theta_v
+        output_dict["exner_pert"] = data_exner - ic_exner
 
     export_vtk(
         tri=plot.tri,
@@ -194,6 +208,7 @@ if __name__ == "__main__":
             os.path.join(output_files_dir, "end_of_timestep_*.pkl")
         )
     output_files.sort()
+    output_files.append(os.path.join(output_files_dir, "initial_condition.pkl"))
 
     print("")
     print(f"Using {num_workers} workers")
