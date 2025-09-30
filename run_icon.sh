@@ -8,14 +8,14 @@ SLURM_NODES=1
 SLURM_UENV="icon/25.2:v3"
 SLURM_UENV_VIEW="default"
 
-SLURM_PARTITION="normal"
-SLURM_TIME="1-00:00:00"
+SLURM_PARTITION="debug"
+SLURM_TIME="00:30:00"
 
-#SLURM_JOBNAME="channel_950m_x_350m_res5m_nlev20"
-#SLURM_JOBNAME="channel_950m_x_350m_res2.5m_nlev40"
-#SLURM_JOBNAME="channel_950m_x_350m_res1.5m_nlev64"
-#SLURM_JOBNAME="channel_950m_x_350m_res1.25m_nlev80"
-#SLURM_JOBNAME="channel_950m_x_350m_res1m_nlev100"
+SLURM_JOBNAME="test_channel_950m_x_350m_res5m_nlev20"
+#SLURM_JOBNAME="channel_950m_x_350m_res2.5m_nlev40_vdiff00015"
+#SLURM_JOBNAME="channel_950m_x_350m_res1.5m_nlev64_vdiff00005"
+#SLURM_JOBNAME="channel_950m_x_350m_res1.25m_nlev80_vdiff00001"
+#SLURM_JOBNAME="channel_950m_x_350m_res1m_nlev100_vdiff00001"
 
 # =======================================
 # USER-EDITABLE: Default run settings
@@ -31,6 +31,7 @@ run_postprocess=false
 if [ -n "$1" ]; then sim_type="$1"; fi
 if [ -n "$2" ]; then run_simulation="$2"; fi
 if [ -n "$3" ]; then run_postprocess="$3"; fi
+if [ -n "$4" ]; then SLURM_JOBNAME="$4"; fi
 
 # ============================================================================
 # Determine cluster name and options
@@ -72,7 +73,8 @@ SLURM_LOGDIR="${SCRATCH}/logs"
 # =======================================
 if [ -z "$SLURM_JOB_ID" ]; then
   # Timestamp for unique log files
-  timestamp=$(date +"%Y%m%d_%H%M%S")
+  #timestamp=$(date +"%Y%m%d_%H%M%S")
+  timestamp=""
 
   #SLURM_JOBNAME="${SLURM_JOBNAME}_${timestamp}"
 
@@ -89,8 +91,8 @@ if [ -z "$SLURM_JOB_ID" ]; then
 
   # override to debug queue if only postprocessing
   if [ "$run_postprocess" = true ] && [ "$run_simulation" = false ]; then
-    SLURM_PARTITION="debug"
-    SLURM_TIME="00:30:00"
+    #SLURM_PARTITION="debug"
+    SLURM_TIME="02:00:00"
   fi
 
   # Ensure log dir exists
@@ -111,6 +113,10 @@ if [ -z "$SLURM_JOB_ID" ]; then
       "$0" "$sim_type" "$run_simulation" "$run_postprocess"
     exit
   fi
+else
+  echo "Running Slurm job $SLURM_JOB_ID"
+  # override job name if inside slurm
+  SLURM_JOBNAME=$SLURM_JOB_NAME
 fi
 
 # ==============================================================================
@@ -118,12 +124,16 @@ fi
 #
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
-export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm
+export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm02
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
 export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
 
 # python
 export ICON4PY_RESTART_FREQUENCY=10000
+diff_digits="${SLURM_JOBNAME##*vdiff}"
+#export ICON4PY_DIFFU_COEFF="0.${diff_digits}"
+export ICON4PY_DIFFU_COEFF="0.0"
+
 case $SLURM_JOBNAME in
 *res5m*)
   export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
@@ -200,12 +210,19 @@ if [ "$run_simulation" = true ]; then
 
     export ICON4PY_OUTPUT_DIR="$OUTPUT_DIR"
 
+    #python \
+    #  model/driver/src/icon4py/model/driver/icon4py_driver.py \
+    #  $ICON4PY_SAVEPOINT_PATH \
+    #  --icon4py_driver_backend="$ICON4PY_BACKEND" \
+    #  --experiment_type=gauss3d_torus \
+    #  --grid_root=2 --grid_level=0 \
+    #  --enable_output
     python \
       model/driver/src/icon4py/model/driver/icon4py_driver.py \
       $ICON4PY_SAVEPOINT_PATH \
       --icon4py_driver_backend="$ICON4PY_BACKEND" \
       --experiment_type=gauss3d_torus \
-      --grid_root=2 --grid_level=0 \
+      --grid_file="$ICON4PY_GRID_FILE_PATH" \
       --enable_output
     ;;
 
@@ -272,11 +289,12 @@ if [ "$run_postprocess" = true ]; then
     if [ -n "$VIRTUAL_ENV" ]; then deactivate; fi
     source "$SCRIPTS_DIR/.venv/bin/activate"
 
-    # generate vtu files
-    python "$SCRIPTS_DIR/plot_vtk.py" "$TOTAL_WORKERS" "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
-
     # compute temporal averages
-    python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS" "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+    #python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS" "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+    python "$SCRIPTS_DIR/temporal_average.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+
+    # generate vtu files
+    python "$SCRIPTS_DIR/plot_vtk.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
   else
     echo "[WARN] No postprocessing pipeline defined for $sim_type"
   fi
