@@ -38,31 +38,31 @@ if [ -n "$4" ]; then SLURM_JOBNAME="$4"; fi
 #
 case $CLUSTER_NAME in
 balfrin)
-  SLURM_ACCOUNT="s83"
-  export SCRATCH=/scratch/mch/jcanton
-  export PROJECTS_DIR=$SCRATCH
-  export ICON4PY_BACKEND="gtfn_gpu"
-  ;;
+    SLURM_ACCOUNT="s83"
+    export SCRATCH=/scratch/mch/jcanton
+    export PROJECTS_DIR=$SCRATCH
+    export ICON4PY_BACKEND="gtfn_gpu"
+    ;;
 santis)
-  SLURM_ACCOUNT="cwd01"
-  export SCRATCH=/capstor/scratch/cscs/jcanton
-  export PROJECTS_DIR=$SCRATCH
-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-tsfur7lqj6njogdqafhpmj5dqltish7t/Linux_aarch64/25.1/compilers/lib
-  export ICON4PY_BACKEND="gtfn_gpu"
-  ;;
+    SLURM_ACCOUNT="cwd01"
+    export SCRATCH=/capstor/scratch/cscs/jcanton
+    export PROJECTS_DIR=$SCRATCH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-tsfur7lqj6njogdqafhpmj5dqltish7t/Linux_aarch64/25.1/compilers/lib
+    export ICON4PY_BACKEND="gtfn_gpu"
+    ;;
 squirrel)
-  export SCRATCH=/scratch/l_jcanton
-  export PROJECTS_DIR=/home/l_jcanton/projects
-  export ICON4PY_BACKEND="gtfn_cpu"
-  ;;
+    export SCRATCH=/scratch/l_jcanton
+    export PROJECTS_DIR=/home/l_jcanton/projects
+    export ICON4PY_BACKEND="gtfn_cpu"
+    ;;
 mac)
-  export SCRATCH=/Users/jcanton/projects
-  export PROJECTS_DIR=/Users/jcanton/projects
-  export ICON4PY_BACKEND="gtfn_cpu"
-  ;;
+    export SCRATCH=/Users/jcanton/projects
+    export PROJECTS_DIR=/Users/jcanton/projects
+    export ICON4PY_BACKEND="gtfn_cpu"
+    ;;
 *)
-  echo "cluster name not recognized: ${CLUSTER_NAME}"
-  ;;
+    echo "cluster name not recognized: ${CLUSTER_NAME}"
+    ;;
 esac
 
 # After SCRATCH is known, define the log directory
@@ -72,51 +72,55 @@ SLURM_LOGDIR="${SCRATCH}/logs"
 # Wrapper: If not in Slurm, submit ourselves
 # =======================================
 if [ -z "$SLURM_JOB_ID" ]; then
-  # Timestamp for unique log files
-  #timestamp=$(date +"%Y%m%d_%H%M%S")
-  timestamp=""
+    # Timestamp for unique log files
+    #timestamp=$(date +"%Y%m%d_%H%M%S")
+    timestamp=""
 
-  #SLURM_JOBNAME="${SLURM_JOBNAME}_${timestamp}"
+    #SLURM_JOBNAME="${SLURM_JOBNAME}_${timestamp}"
 
-  # Pick log suffix based on sim type + booleans
-  if [ "$run_simulation" = true ] && [ "$run_postprocess" = true ]; then
-    log_suffix="${sim_type}_both"
-  elif [ "$run_simulation" = true ]; then
-    log_suffix="${sim_type}_sim"
-  elif [ "$run_postprocess" = true ]; then
-    log_suffix="${sim_type}_post"
-  else
-    log_suffix="${sim_type}_idle"
-  fi
+    # Pick log suffix based on sim type + booleans
+    if [ "$run_simulation" = true ] && [ "$run_postprocess" = true ]; then
+        log_suffix="${sim_type}_both"
+    elif [ "$run_simulation" = true ]; then
+        log_suffix="${sim_type}_sim"
+    elif [ "$run_postprocess" = true ]; then
+        log_suffix="${sim_type}_post"
+    else
+        log_suffix="${sim_type}_idle"
+    fi
 
-  # override to debug queue if only postprocessing
-  if [ "$run_postprocess" = true ] && [ "$run_simulation" = false ]; then
-    #SLURM_PARTITION="debug"
-    SLURM_TIME="02:00:00"
-  fi
+    # override to debug queue if only postprocessing
+    if [ "$run_postprocess" = true ] && [ "$run_simulation" = false ]; then
+        #SLURM_PARTITION="debug"
+        SLURM_TIME="02:00:00"
+    fi
 
-  # Ensure log dir exists
-  mkdir -p "$SLURM_LOGDIR"
+    # Ensure log dir exists
+    mkdir -p "$SLURM_LOGDIR"
 
-  if [ "$sim_type" != "icon-f90" ]; then
-    # Submit self to Slurm with parameters preserved
-    sbatch \
-      --account="$SLURM_ACCOUNT" \
-      --nodes="$SLURM_NODES" \
-      --uenv="$SLURM_UENV" \
-      --view="$SLURM_UENV_VIEW" \
-      --partition="$SLURM_PARTITION" \
-      --time="$SLURM_TIME" \
-      --job-name="$SLURM_JOBNAME" \
-      --output="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
-      --error="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
-      "$0" "$sim_type" "$run_simulation" "$run_postprocess"
-    exit
-  fi
+    # If running on mac, skip sbatch and run directly
+    if [ "$CLUSTER_NAME" = "mac" ]; then
+        echo "[INFO] Running locally on macOS, skipping sbatch."
+        # Continue script execution (do not exit)
+    elif [ "$sim_type" != "icon-f90" ]; then
+        # Submit self to Slurm with parameters preserved
+        sbatch \
+            --account="$SLURM_ACCOUNT" \
+            --nodes="$SLURM_NODES" \
+            --uenv="$SLURM_UENV" \
+            --view="$SLURM_UENV_VIEW" \
+            --partition="$SLURM_PARTITION" \
+            --time="$SLURM_TIME" \
+            --job-name="$SLURM_JOBNAME" \
+            --output="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
+            --error="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
+            "$0" "$sim_type" "$run_simulation" "$run_postprocess"
+        exit
+    fi
 else
-  echo "Running Slurm job $SLURM_JOB_ID"
-  # override job name if inside slurm
-  SLURM_JOBNAME=$SLURM_JOB_NAME
+    echo "Running Slurm job $SLURM_JOB_ID"
+    # override job name if inside slurm
+    SLURM_JOBNAME=$SLURM_JOB_NAME
 fi
 
 # ==============================================================================
@@ -124,7 +128,7 @@ fi
 #
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
-export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm02
+export ICON4PY_DIR=$PROJECTS_DIR/icon4py
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
 export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
 
@@ -136,43 +140,43 @@ export ICON4PY_DIFFU_COEFF="0.0"
 
 case $SLURM_JOBNAME in
 *res5m*)
-  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
-  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
-  export ICON4PY_PLOT_FREQUENCY=1500
-  export ICON4PY_NUM_LEVELS=20
-  export ICON4PY_DTIME=0.04
-  ;;
+    export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
+    export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
+    export ICON4PY_PLOT_FREQUENCY=1500
+    export ICON4PY_NUM_LEVELS=20
+    export ICON4PY_DTIME=0.04
+    ;;
 *res2.5m*)
-  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_2.5m_nlev40/ser_data"
-  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res2.5m.nc"
-  export ICON4PY_PLOT_FREQUENCY=3000
-  export ICON4PY_NUM_LEVELS=40
-  export ICON4PY_DTIME=0.02
-  ;;
+    export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_2.5m_nlev40/ser_data"
+    export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res2.5m.nc"
+    export ICON4PY_PLOT_FREQUENCY=3000
+    export ICON4PY_NUM_LEVELS=40
+    export ICON4PY_DTIME=0.02
+    ;;
 *res1.5m*)
-  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
-  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
-  export ICON4PY_PLOT_FREQUENCY=6000
-  export ICON4PY_NUM_LEVELS=64
-  export ICON4PY_DTIME=0.01
-  ;;
+    export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
+    export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
+    export ICON4PY_PLOT_FREQUENCY=6000
+    export ICON4PY_NUM_LEVELS=64
+    export ICON4PY_DTIME=0.01
+    ;;
 *res1.25m*)
-  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1.25m_nlev80/ser_data"
-  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.25m.nc"
-  export ICON4PY_PLOT_FREQUENCY=6000
-  export ICON4PY_NUM_LEVELS=80
-  export ICON4PY_DTIME=0.01
-  ;;
+    export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1.25m_nlev80/ser_data"
+    export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.25m.nc"
+    export ICON4PY_PLOT_FREQUENCY=6000
+    export ICON4PY_NUM_LEVELS=80
+    export ICON4PY_DTIME=0.01
+    ;;
 *res1m*)
-  export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1m_nlev100/ser_data"
-  export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1m.nc"
-  export ICON4PY_PLOT_FREQUENCY=6000
-  export ICON4PY_NUM_LEVELS=100
-  export ICON4PY_DTIME=0.01
-  ;;
+    export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1m_nlev100/ser_data"
+    export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1m.nc"
+    export ICON4PY_PLOT_FREQUENCY=6000
+    export ICON4PY_NUM_LEVELS=100
+    export ICON4PY_DTIME=0.01
+    ;;
 *)
-  echo "invalid jobname"
-  ;;
+    echo "invalid jobname"
+    ;;
 esac
 
 # fortran
@@ -196,106 +200,106 @@ echo ""
 # Run simulation
 #
 if [ "$run_simulation" = true ]; then
-  case $sim_type in
-  icon4py)
-    echo "[INFO] Running icon4py simulation..."
+    case $sim_type in
+    icon4py)
+        echo "[INFO] Running icon4py simulation..."
 
-    cd "$ICON4PY_DIR" || exit
-    source .venv/bin/activate
+        cd "$ICON4PY_DIR" || exit
+        source .venv/bin/activate
 
-    export PYTHONOPTIMIZE=2
-    export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE=1
-    export GT4PY_BUILD_CACHE_LIFETIME=persistent
-    export GT4PY_BUILD_CACHE_DIR=$SCRATCH/gt4py_cache
+        export PYTHONOPTIMIZE=2
+        export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE=1
+        export GT4PY_BUILD_CACHE_LIFETIME=persistent
+        export GT4PY_BUILD_CACHE_DIR=$SCRATCH/gt4py_cache
 
-    export ICON4PY_OUTPUT_DIR="$OUTPUT_DIR"
+        export ICON4PY_OUTPUT_DIR="$OUTPUT_DIR"
 
-    #python \
-    #  model/driver/src/icon4py/model/driver/icon4py_driver.py \
-    #  $ICON4PY_SAVEPOINT_PATH \
-    #  --icon4py_driver_backend="$ICON4PY_BACKEND" \
-    #  --experiment_type=gauss3d_torus \
-    #  --grid_root=2 --grid_level=0 \
-    #  --enable_output
-    python \
-      model/driver/src/icon4py/model/driver/icon4py_driver.py \
-      $ICON4PY_SAVEPOINT_PATH \
-      --icon4py_driver_backend="$ICON4PY_BACKEND" \
-      --experiment_type=gauss3d_torus \
-      --grid_file="$ICON4PY_GRID_FILE_PATH" \
-      --enable_output
-    ;;
+        #python \
+        #  model/driver/src/icon4py/model/driver/icon4py_driver.py \
+        #  $ICON4PY_SAVEPOINT_PATH \
+        #  --icon4py_driver_backend="$ICON4PY_BACKEND" \
+        #  --experiment_type=gauss3d_torus \
+        #  --grid_root=2 --grid_level=0 \
+        #  --enable_output
+        python \
+            model/driver/src/icon4py/model/driver/icon4py_driver.py \
+            $ICON4PY_SAVEPOINT_PATH \
+            --icon4py_driver_backend="$ICON4PY_BACKEND" \
+            --experiment_type=gauss3d_torus \
+            --grid_file="$ICON4PY_GRID_FILE_PATH" \
+            --enable_output
+        ;;
 
-  icon-f90)
-    echo "[INFO] Preparing and running icon-f90 simulation..."
+    icon-f90)
+        echo "[INFO] Preparing and running icon-f90 simulation..."
 
-    cd "$ICONF90_DIR" || exit
-    cp run/exp.${ICONF90_EXPERIMENT_NAME} ${ICONF90_BUILD_FOLDER}/run/
+        cd "$ICONF90_DIR" || exit
+        cp run/exp.${ICONF90_EXPERIMENT_NAME} ${ICONF90_BUILD_FOLDER}/run/
 
-    cd ${ICONF90_BUILD_FOLDER} || exit
-    ./make_runscripts ${ICONF90_EXPERIMENT_NAME}
+        cd ${ICONF90_BUILD_FOLDER} || exit
+        ./make_runscripts ${ICONF90_EXPERIMENT_NAME}
 
-    cd run || exit
+        cd run || exit
 
-    # add/fix slurm stuff
-    sed -i '/#SBATCH --job-name=/i #SBATCH --uenv='"$SLURM_UENV" exp.${ICONF90_EXPERIMENT_NAME}.run
-    sed -i '/#SBATCH --job-name=/i #SBATCH --view='"$SLURM_UENV_VIEW" exp.${ICONF90_EXPERIMENT_NAME}.run
-    sed -i '/#SBATCH --job-name=/i #SBATCH --account='"$SLURM_ACCOUNT" exp.${ICONF90_EXPERIMENT_NAME}.run
-    sed -i '/#SBATCH --job-name=/i #SBATCH --time='"$SLURM_TIME" exp.${ICONF90_EXPERIMENT_NAME}.run
-    sed -i '/#SBATCH --partition=/c\#SBATCH --partition='"$SLURM_PARTITION" exp.${ICONF90_EXPERIMENT_NAME}.run
-    sed -i '/#SBATCH --nodes=/c\#SBATCH --nodes='"$SLURM_NODES" exp.${ICONF90_EXPERIMENT_NAME}.run
-    #sed -i '/#SBATCH --ntasks-per-node=/c\#SBATCH --ntasks-per-node=4' exp.${ICONF90_EXPERIMENT_NAME}.run
-    #sed -i '/export mpi_procs_pernode/c\export mpi_procs_pernode=4' exp.${ICONF90_EXPERIMENT_NAME}.run
+        # add/fix slurm stuff
+        sed -i '/#SBATCH --job-name=/i #SBATCH --uenv='"$SLURM_UENV" exp.${ICONF90_EXPERIMENT_NAME}.run
+        sed -i '/#SBATCH --job-name=/i #SBATCH --view='"$SLURM_UENV_VIEW" exp.${ICONF90_EXPERIMENT_NAME}.run
+        sed -i '/#SBATCH --job-name=/i #SBATCH --account='"$SLURM_ACCOUNT" exp.${ICONF90_EXPERIMENT_NAME}.run
+        sed -i '/#SBATCH --job-name=/i #SBATCH --time='"$SLURM_TIME" exp.${ICONF90_EXPERIMENT_NAME}.run
+        sed -i '/#SBATCH --partition=/c\#SBATCH --partition='"$SLURM_PARTITION" exp.${ICONF90_EXPERIMENT_NAME}.run
+        sed -i '/#SBATCH --nodes=/c\#SBATCH --nodes='"$SLURM_NODES" exp.${ICONF90_EXPERIMENT_NAME}.run
+        #sed -i '/#SBATCH --ntasks-per-node=/c\#SBATCH --ntasks-per-node=4' exp.${ICONF90_EXPERIMENT_NAME}.run
+        #sed -i '/export mpi_procs_pernode/c\export mpi_procs_pernode=4' exp.${ICONF90_EXPERIMENT_NAME}.run
 
-    # submit the experiment
-    echo "[INFO] Queuing icon-f90 with sbatch..."
-    output=$(sbatch exp.${ICONF90_EXPERIMENT_NAME}.run)
-    job_id=$(echo "$output" | awk '{print $4}')
-    logfile="LOG.exp.${ICONF90_EXPERIMENT_NAME}.run.${job_id}.o"
+        # submit the experiment
+        echo "[INFO] Queuing icon-f90 with sbatch..."
+        output=$(sbatch exp.${ICONF90_EXPERIMENT_NAME}.run)
+        job_id=$(echo "$output" | awk '{print $4}')
+        logfile="LOG.exp.${ICONF90_EXPERIMENT_NAME}.run.${job_id}.o"
 
-    rm logfile.log
-    ln -s "$logfile" logfile.log
+        rm logfile.log
+        ln -s "$logfile" logfile.log
 
-    # create postpro job
-    postpro_script="move_outputs_${ICONF90_EXPERIMENT_NAME}.sh"
-    cat <<EOF >"$postpro_script"
+        # create postpro job
+        postpro_script="move_outputs_${ICONF90_EXPERIMENT_NAME}.sh"
+        cat <<EOF >"$postpro_script"
 #!/bin/bash
 mv $ICONF90_DIR/${ICONF90_BUILD_FOLDER}/experiments/${ICONF90_EXPERIMENT_NAME}/* $OUTPUT_DIR/
 mv $ICONF90_DIR/${ICONF90_BUILD_FOLDER}/run/${logfile} $OUTPUT_DIR/logfile.log
 EOF
-    chmod +x "$postpro_script"
+        chmod +x "$postpro_script"
 
-    # submit postpro job
-    sbatch \
-      --account="$SLURM_ACCOUNT" \
-      --partition=debug \
-      --time=00:10:00 \
-      --dependency=afterany:"${job_id}" \
-      --job-name="move_outputs_${ICONF90_EXPERIMENT_NAME}" \
-      --output="postpro.log" \
-      --error="postpro.log" \
-      "$postpro_script"
-    ;;
-  esac
+        # submit postpro job
+        sbatch \
+            --account="$SLURM_ACCOUNT" \
+            --partition=debug \
+            --time=00:10:00 \
+            --dependency=afterany:"${job_id}" \
+            --job-name="move_outputs_${ICONF90_EXPERIMENT_NAME}" \
+            --output="postpro.log" \
+            --error="postpro.log" \
+            "$postpro_script"
+        ;;
+    esac
 fi
 
 # ==============================================================================
 # Postprocess
 #
 if [ "$run_postprocess" = true ]; then
-  echo "[INFO] Running postprocess..."
+    echo "[INFO] Running postprocess..."
 
-  if [ "$sim_type" = "icon4py" ]; then
-    if [ -n "$VIRTUAL_ENV" ]; then deactivate; fi
-    source "$SCRIPTS_DIR/.venv/bin/activate"
+    if [ "$sim_type" = "icon4py" ]; then
+        if [ -n "$VIRTUAL_ENV" ]; then deactivate; fi
+        source "$SCRIPTS_DIR/.venv/bin/activate"
 
-    # compute temporal averages
-    #python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS" "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
-    python "$SCRIPTS_DIR/temporal_average.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+        # compute temporal averages
+        #python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS" "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+        python "$SCRIPTS_DIR/temporal_average.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
 
-    # generate vtu files
-    python "$SCRIPTS_DIR/plot_vtk.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
-  else
-    echo "[WARN] No postprocessing pipeline defined for $sim_type"
-  fi
+        # generate vtu files
+        python "$SCRIPTS_DIR/plot_vtk.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+    else
+        echo "[WARN] No postprocessing pipeline defined for $sim_type"
+    fi
 fi
