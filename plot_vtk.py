@@ -123,14 +123,16 @@ def process_file(args):
     data_w = state["w"]
     data_vn = state["vn"]
 
-    initial_condition_path = os.path.join(os.path.dirname(file_path), "initial_condition.pkl")
+    initial_condition_path = os.path.join(os.path.dirname(file_path), "initial_condition_ibm.pkl")
     found_ic = os.path.exists(initial_condition_path)
+    if not found_ic:
+        initial_condition_path = os.path.join(os.path.dirname(file_path), "initial_condition.pkl")
     if found_ic:
-        with open(file_path, "rb") as f:
-            state = pickle.load(f)
-        ic_rho = state["rho"]
-        ic_theta_v = state["theta_v"]
-        ic_exner = state["exner"]
+        with open(initial_condition_path, "rb") as f:
+            ic_state = pickle.load(f)
+        ic_rho = ic_state["rho"]
+        ic_theta_v = ic_state["theta_v"]
+        ic_exner = ic_state["exner"]
 
     if "sponge_full_cell" in state:
         data_sponge_fc = state["sponge_full_cell"]
@@ -168,9 +170,9 @@ def process_file(args):
     if data_sponge_fc is not None:
         output_dict["sponge_fc"] = data_sponge_fc
     if found_ic:
-        output_dict["rho_pert"] = data_rho - ic_rho
-        output_dict["theta_v_pert"] = data_theta_v - ic_theta_v
-        output_dict["exner_pert"] = data_exner - ic_exner
+        output_dict["pert_rho"] = data_rho - ic_rho
+        output_dict["pert_theta_v"] = data_theta_v - ic_theta_v
+        output_dict["pert_exner"] = data_exner - ic_exner
 
     export_vtk(
         tri=plot.tri,
@@ -197,18 +199,22 @@ if __name__ == "__main__":
         os.makedirs(vtks_dir)
 
     output_files = glob.glob(
+        os.path.join(output_files_dir, "?????_initial_condition*.pkl")
+    )
+    output_files += glob.glob(
         os.path.join(output_files_dir, "??????_end_of_timestep_*pkl")
     )
     output_files += glob.glob(
-        os.path.join(output_files_dir, "?????_initial_condition*.pkl")
+        os.path.join(output_files_dir, "initial_condition*.pkl")
+    )
+    output_files += glob.glob(
+        os.path.join(output_files_dir, "end_of_timestep_*.pkl")
     )
     output_files += glob.glob(os.path.join(output_files_dir, "?????_debug_*.pkl"))
-    if len(output_files) == 0:
-        output_files = glob.glob(
-            os.path.join(output_files_dir, "end_of_timestep_*.pkl")
-        )
+    output_files += glob.glob(
+        os.path.join(output_files_dir, "avgs", "avg_hour*.pkl")
+    )
     output_files.sort()
-    output_files.append(os.path.join(output_files_dir, "initial_condition.pkl"))
 
     print("")
     print(f"Using {num_workers} workers")
@@ -218,7 +224,7 @@ if __name__ == "__main__":
     print(f"Found {len(output_files)} output files in {output_files_dir}")
     print("")
 
-    fileLabel = lambda file_path: file_path.split("/")[-1].split(".")[0][7:]
+    fileLabel = lambda file_path: file_path.split("/")[-1].split(".")[0]#[7:]
 
     # Prepare arguments for each file
     tasks = []
