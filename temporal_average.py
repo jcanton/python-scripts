@@ -11,9 +11,12 @@ from icon4py.model.common.io import plots
 
 def process_files(args):
     output_files, out_path, savepoint_path, grid_file_path = args
-    if os.path.exists(out_path):
-        print(f"Skipping {out_path}, already exists.", flush=True)
-        return  # Skip if already processed
+
+    # Actually don't skip, to allow re-processing because I am computing them
+    # while the sim is running
+    #if os.path.exists(out_path):
+    #    print(f"Skipping {out_path}, already exists.", flush=True)
+    #    return  # Skip if already processed
 
     # NOTE: plot must be created in each process, as it is not picklable.
     plot = plots.Plot(

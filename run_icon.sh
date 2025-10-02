@@ -8,10 +8,11 @@ SLURM_NODES=1
 SLURM_UENV="icon/25.2:v3"
 SLURM_UENV_VIEW="default"
 
-SLURM_PARTITION="debug"
-SLURM_TIME="00:30:00"
+SLURM_PARTITION="normal"
+#SLURM_TIME="1-00:00:00"
+SLURM_TIME="1:00:00"
 
-SLURM_JOBNAME="test_channel_950m_x_350m_res5m_nlev20"
+SLURM_JOBNAME="test_channel_950m_x_350m_res1m_nlev100_vdiff00100"
 #SLURM_JOBNAME="channel_950m_x_350m_res2.5m_nlev40_vdiff00015"
 #SLURM_JOBNAME="channel_950m_x_350m_res1.5m_nlev64_vdiff00005"
 #SLURM_JOBNAME="channel_950m_x_350m_res1.25m_nlev80_vdiff00001"
@@ -76,8 +77,6 @@ if [ -z "$SLURM_JOB_ID" ]; then
     #timestamp=$(date +"%Y%m%d_%H%M%S")
     timestamp=""
 
-    #SLURM_JOBNAME="${SLURM_JOBNAME}_${timestamp}"
-
     # Pick log suffix based on sim type + booleans
     if [ "$run_simulation" = true ] && [ "$run_postprocess" = true ]; then
         log_suffix="${sim_type}_both"
@@ -87,12 +86,6 @@ if [ -z "$SLURM_JOB_ID" ]; then
         log_suffix="${sim_type}_post"
     else
         log_suffix="${sim_type}_idle"
-    fi
-
-    # override to debug queue if only postprocessing
-    if [ "$run_postprocess" = true ] && [ "$run_simulation" = false ]; then
-        #SLURM_PARTITION="debug"
-        SLURM_TIME="02:00:00"
     fi
 
     # Ensure log dir exists
@@ -128,15 +121,20 @@ fi
 #
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
-export ICON4PY_DIR=$PROJECTS_DIR/icon4py
+export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm_01
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
 export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
 
+# ------------------------------------------------------------------------------
 # python
 export ICON4PY_RESTART_FREQUENCY=10000
-diff_digits="${SLURM_JOBNAME##*vdiff}"
-#export ICON4PY_DIFFU_COEFF="0.${diff_digits}"
-export ICON4PY_DIFFU_COEFF="0.0"
+if [[ "$SLURM_JOBNAME" == *vdiff* ]]; then
+    # get the diffusion coefficient from the job name
+    diff_digits="${SLURM_JOBNAME##*vdiff}"
+    export ICON4PY_DIFFU_COEFF="0.${diff_digits}"
+else
+    export ICON4PY_DIFFU_COEFF="0.0"
+fi
 
 case $SLURM_JOBNAME in
 *res5m*)
@@ -176,24 +174,28 @@ case $SLURM_JOBNAME in
     ;;
 *)
     echo "invalid jobname"
+    exit 1
     ;;
 esac
 
+# ------------------------------------------------------------------------------
 # fortran
 export ICONF90_EXPERIMENT_NAME="teamx_intercomparison"
 export ICONF90_BUILD_FOLDER="build_cpu"
 
+# ------------------------------------------------------------------------------
 # Unified output dir (per sim_type)
 export OUTPUT_DIR=$SCRATCH/runs/$sim_type/$SLURM_JOBNAME
 mkdir -p "$OUTPUT_DIR"
 
+# ------------------------------------------------------------------------------
 echo ""
-echo "Running on cluster   = $CLUSTER_NAME"
-echo "SLURM_JOB_ID         = $SLURM_JOB_ID"
-echo "sim_type             = $sim_type"
-echo "run_simulation       = $run_simulation"
-echo "run_postprocess      = $run_postprocess"
-echo "OUTPUT_DIR           = $OUTPUT_DIR"
+echo "[INFO] Running on cluster   = $CLUSTER_NAME"
+echo "[INFO] SLURM_JOB_ID         = $SLURM_JOB_ID"
+echo "[INFO] sim_type             = $sim_type"
+echo "[INFO] run_simulation       = $run_simulation"
+echo "[INFO] run_postprocess      = $run_postprocess"
+echo "[INFO] OUTPUT_DIR           = $OUTPUT_DIR"
 echo ""
 
 # ==============================================================================
@@ -203,6 +205,13 @@ if [ "$run_simulation" = true ]; then
     case $sim_type in
     icon4py)
         echo "[INFO] Running icon4py simulation..."
+        echo "[INFO] ICON4PY_DIR = ${ICON4PY_DIR}"
+        echo "[INFO] ICON4PY_SAVEPOINT_PATH = ${ICON4PY_SAVEPOINT_PATH}"
+        echo "[INFO] ICON4PY_GRID_FILE_PATH = ${ICON4PY_GRID_FILE_PATH}"
+        echo "[INFO] ICON4PY_PLOT_FREQUENCY = ${ICON4PY_PLOT_FREQUENCY}"
+        echo "[INFO] ICON4PY_NUM_LEVELS     = ${ICON4PY_NUM_LEVELS}"
+        echo "[INFO] ICON4PY_DTIME          = ${ICON4PY_DTIME}"
+        echo "[INFO] ICON4PY_DIFFU_COEFF    = ${ICON4PY_DIFFU_COEFF}"
 
         cd "$ICON4PY_DIR" || exit
         source .venv/bin/activate
@@ -214,20 +223,23 @@ if [ "$run_simulation" = true ]; then
 
         export ICON4PY_OUTPUT_DIR="$OUTPUT_DIR"
 
-        #python \
-        #  model/driver/src/icon4py/model/driver/icon4py_driver.py \
-        #  $ICON4PY_SAVEPOINT_PATH \
-        #  --icon4py_driver_backend="$ICON4PY_BACKEND" \
-        #  --experiment_type=gauss3d_torus \
-        #  --grid_root=2 --grid_level=0 \
-        #  --enable_output
-        python \
-            model/driver/src/icon4py/model/driver/icon4py_driver.py \
-            $ICON4PY_SAVEPOINT_PATH \
-            --icon4py_driver_backend="$ICON4PY_BACKEND" \
-            --experiment_type=gauss3d_torus \
-            --grid_file="$ICON4PY_GRID_FILE_PATH" \
-            --enable_output
+        if [[ "$ICON4PY_DIR" == *ibm_01* ]]; then
+            python \
+                model/driver/src/icon4py/model/driver/icon4py_driver.py \
+                "$ICON4PY_SAVEPOINT_PATH" \
+                --icon4py_driver_backend="$ICON4PY_BACKEND" \
+                --experiment_type=gauss3d_torus \
+                --grid_root=2 --grid_level=0 \
+                --enable_output
+        else
+            python \
+                model/driver/src/icon4py/model/driver/icon4py_driver.py \
+                "$ICON4PY_SAVEPOINT_PATH" \
+                --icon4py_driver_backend="$ICON4PY_BACKEND" \
+                --experiment_type=gauss3d_torus \
+                --grid_file="$ICON4PY_GRID_FILE_PATH" \
+                --enable_output
+        fi
         ;;
 
     icon-f90)
