@@ -2,18 +2,22 @@ import glob
 import os
 import pickle
 
+import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 
 # -------------------------------------------------------------------------------
 # Some serialized data
 #
-dx = 5
+dx = 1 #.25
 
 #with open("./data/plotting_250x250x1000_2.5.pkl", "rb") as f:
 #with open("./data/plotting_250x250x250_1.25.pkl", "rb") as f:
 with open("./data/plotting_channel_950x350x100_5m_nlev20.pkl", "rb") as f:
 #with open("./data/plotting_channel_950x350x100_2.5m_nlev40.pkl", "rb") as f:
+#with open("./data/plotting_channel_950x350x100_1.5m_nlev64.pkl", "rb") as f:
+#with open("./data/plotting_channel_950x350x100_1.25m_nlev80.pkl", "rb") as f:
+#with open("./data/plotting_channel_950x350x100_1m_nlev100.pkl", "rb") as f:
     plotting = pickle.load(f)
     tri = plotting["tri"]
     full_level_heights = plotting["full_level_heights"]
@@ -28,9 +32,10 @@ half_levels = half_level_heights[0,:]
 num_cells = len(tri.cell_x)
 num_levels = len(full_levels)
 
-# 5:   (20*3600+30*60)/706499 = .10 |  13500x20 =   270_000
-# 2.5: (19*3600+15*60)/539999 = .12 |  53000x40 = 2_120_000
-# 1.5: (15*3600+30*60)/41999  = 1.3 | 148452x64 = 9_500_928
+# 5:    (20*3600+30*60)/706499 = .10 |  13500x20 =   270_000
+# 2.5:  (19*3600+15*60)/539999 = .12 |  53000x40 = 2_120_000
+# 1.5:  (15*3600+30*60)/41999  = 1.3 | 148452x64 = 9_500_928
+# 1.25:
 
 #-------------------------------------------------------------------------------
 # Load data
@@ -38,6 +43,9 @@ num_levels = len(full_levels)
 main_dir = "../runs/icon4py/"
 run_name = "channel_950m_x_350m_res5m_nlev20"
 #run_name = "channel_950m_x_350m_res2.5m_nlev40"
+#run_name = "channel_950m_x_350m_res2.5m_nlev40_vdiff0001"
+#run_name = "channel_950m_x_350m_res1.25m_nlev80_vdiff00100"
+#run_name = "channel_950m_x_350m_res1m_nlev100_vdiff00010"
 
 #fname = os.path.join(main_dir, run_name, "initial_condition.pkl")
 #fname = os.path.join(main_dir, run_name, "000000_initial_condition.pkl")
@@ -75,10 +83,10 @@ with open(fname, "rb") as ifile:
 #
 #x0 = [0, 50] # beginning of channel
 #x0 = [130, 180] # cube leading edge
-x0 = [190, 210] #[180, 230] # cube trailing edge
+x0 = [190, 220] #[180, 230] # cube trailing edge
 #x0 = [330, 380] # middle of nowhere
 #x0 = [850, 950] # end of channel
-y0 = 176 # 175
+y0 = 175.2 # 175
 
 # pick edge indexes
 e_dist = ((tri.edge_y-y0)**2 )**0.5
@@ -123,18 +131,18 @@ axs = fig.subplots(nrows=5, ncols=n_points, sharex=False, sharey=True)
 for i in range(n_points):
 
     axs[0][i].set_title(f"{i+1}")
-    axs[0][i].plot(-vn [e_idxs[i],:], full_levels, '-o',  ms=4)
+    axs[0][i].plot(-vn [e_idxs[i],:], full_levels, '-',  ms=4)
 
-    axs[1][i].plot(w [c_idxs[i],:], half_levels, '-o',  ms=4)
+    axs[1][i].plot(w [c_idxs[i],:], half_levels, '-',  ms=4)
 
     #axs[2][i].plot(rho[c_idxs[i],:], full_levels, '-o', ms=4)
-    axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--o', ms=4)
+    axs[2][i].plot(rho[c_idxs[i],:] - rho0[c_idxs[i],:], full_levels, '--', ms=4)
 
     #axs[3][i].plot(exner[c_idxs[i],:], full_levels, '-o', ms=4)
-    axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--o', ms=4)
+    axs[3][i].plot(exner[c_idxs[i],:] - exner0[c_idxs[i],:], full_levels, '--', ms=4)
 
     #axs[4][i].plot(theta_v[c_idxs[i],:], full_levels, '-o', ms=4)
-    axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--o', ms=4)
+    axs[4][i].plot(theta_v[c_idxs[i],:] - theta_v0[c_idxs[i],:], full_levels, '--', ms=4)
 
     for iax, ax in enumerate(axs):
         # ibm masks
@@ -144,11 +152,11 @@ for i in range(n_points):
         else:
             ax[i].plot(0 * np.ones(np.sum(half_cell_mask[c_idxs[i], :].astype(int))), half_levels[half_cell_mask[c_idxs[i], :].astype(bool)], '+k')
             ax[i].plot(0 * np.ones(np.sum(full_cell_mask[c_idxs[i], :].astype(int))), full_levels[full_cell_mask[c_idxs[i], :].astype(bool)], 'xk')
-        # grid (full and half levels)
-        ax[i].set_yticks(full_levels, minor=False)
-        ax[i].set_yticks(half_levels, minor=True)
-        ax[i].yaxis.grid(which='major', color='#DDDDDD', linewidth=0.8)
-        ax[i].yaxis.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
+        ## grid (full and half levels)
+        #ax[i].set_yticks(full_levels, minor=False)
+        #ax[i].set_yticks(half_levels, minor=True)
+        #ax[i].yaxis.grid(which='major', color='#DDDDDD', linewidth=0.8)
+        #ax[i].yaxis.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
 
 axs[0][0].set_ylabel(r"$v_n$")
 axs[1][0].set_ylabel(r"$w$")
@@ -198,6 +206,7 @@ plt.draw()
 #
 fnames = glob.glob(os.path.join(main_dir, run_name, "avgs/avg_hour???.pkl"))
 fnames.sort()
+print(f"Found {len(fnames)-2} files for temporal averaging")
 u_cf = np.zeros((num_cells, num_levels))
 for fname in fnames[2:]:
     with open(fname, "rb") as ifile:
@@ -211,7 +220,17 @@ u_cf /= (len(fnames) - 2)
 H   = 50
 xH  = 3*H
 x0s = [xH - H, xH + 0.5*H, xH + H, xH + 1.5*H, xH + 2.5*H, xH + 4*H]
-y0  = 175
+#y0  = 176 # already defined for the instantaneous profiles
+
+background_path = os.path.join("data", "palm_validation_plots")
+backgrounds = [
+    "xH_m10.png",
+    "xH_p05.png",
+    "xH_p10.png",
+    "xH_p15.png",
+    "xH_p25.png",
+    "xH_p40.png",
+]
 
 # pick cell indexes
 c_idxs = []
@@ -223,11 +242,13 @@ for x0 in x0s:
 fig = plt.figure(4); plt.clf(); plt.show(block=False)
 axs = fig.subplots(nrows=1, ncols=len(x0s), sharex=True, sharey=True)
 for ix, x0 in enumerate(x0s):
-    axs[ix].plot(u_cf[c_idxs[ix],:], full_levels/H, '-o',  ms=4)
+    img = mpimg.imread(os.path.join(background_path, backgrounds[ix]))
+    axs[ix].imshow(img, extent=[-0.7, 1.5, 0.0, 2.0], aspect='equal')
+    axs[ix].plot(u_cf[c_idxs[ix],:], full_levels/H, '-',  ms=4)
     axs[ix].plot([0,0],[0,2], '-k')
     axs[ix].set_xlabel(r"$U / U_B$")
     axs[ix].set_title(fr"$x / H = {(x0-xH)/H:.1f}$")
-    axs[ix].set_aspect('equal')
+    #axs[ix].set_aspect('equal')
 
 axs[0].set_ylabel(r"$y / H$")
 axs[0].set_xlim([-0.7, 1.5])

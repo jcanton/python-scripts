@@ -33,14 +33,14 @@ plot = plots.Plot(
 )
 
 importlib.reload(ibm)
-_ibm = ibm.ImmersedBoundaryMethod(
+_ibm_masks = ibm.ImmersedBoundaryMethodMasks(
     grid=plot.grid,
     savepoint_path=savepoint_path,
     grid_file_path=grid_file_path,
     backend=gtx.gtfn_cpu,
 )
 
-data = _ibm.full_cell_mask.asnumpy().astype(float)[:,-1]
+data = _ibm_masks.full_cell_mask.asnumpy().astype(float)[:,-1]
 
 plt.figure(1); plt.clf(); plt.show(block=False)
 plt.tripcolor(plot.tri, data, edgecolor='none', shading='flat')

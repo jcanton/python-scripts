@@ -46,11 +46,12 @@ def process_files(args):
                 theta_v += state["theta_v"]
 
     n = len(output_files)
-    vn /= n
-    w /= n
-    rho /= n
-    exner /= n
-    theta_v /= n
+    if n > 0:
+        vn /= n
+        w /= n
+        rho /= n
+        exner /= n
+        theta_v /= n
 
     u_cf, v_cf = plot._vec_interpolate_to_cell_center(vn)
     w_cf = plot._scal_interpolate_to_full_levels(w)

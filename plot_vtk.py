@@ -145,7 +145,7 @@ def process_file(args):
         backend=gtx.gtfn_cpu,
     )
     if do_ibm:
-        _ibm = ibm.ImmersedBoundaryMethod(
+        _ibm_masks = ibm.ImmersedBoundaryMethodMasks(
             grid=plot.grid,
             savepoint_path=savepoint_path,
             grid_file_path=grid_file_path,
@@ -166,7 +166,7 @@ def process_file(args):
         "vort_cf": vort_cf,
     }
     if do_ibm:
-        output_dict["cell_mask"] = _ibm.full_cell_mask.asnumpy().astype(float)
+        output_dict["cell_mask"] = _ibm_masks.full_cell_mask.asnumpy().astype(float)
     if data_sponge_fc is not None:
         output_dict["sponge_fc"] = data_sponge_fc
     if found_ic:

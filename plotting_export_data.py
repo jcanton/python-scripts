@@ -44,7 +44,7 @@ half_level_heights = plot.half_level_heights
 
 try:
     from icon4py.model.atmosphere.dycore import ibm
-    _ibm = ibm.ImmersedBoundaryMethod(
+    _ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         grid=grid,
         savepoint_path=savepoint_path,
         grid_file_path=grid_file_path,
@@ -68,8 +68,8 @@ with open("data/plotting_channel_950x350x100_1m_nlev100.pkl", "wb") as f:
         "tri": tri,
         "full_level_heights": full_level_heights,
         "half_level_heights": half_level_heights,
-        "full_cell_mask": _ibm.full_cell_mask.asnumpy().astype(float) if do_ibm else None,
-        "half_cell_mask": _ibm.half_cell_mask.asnumpy().astype(float) if do_ibm else None,
-        "full_edge_mask": _ibm.full_edge_mask.asnumpy().astype(float) if do_ibm else None,
-        "half_edge_mask": _ibm.half_edge_mask.asnumpy().astype(float) if do_ibm else None,
+        "full_cell_mask": _ibm_masks.full_cell_mask.asnumpy().astype(float) if do_ibm else None,
+        "half_cell_mask": _ibm_masks.half_cell_mask.asnumpy().astype(float) if do_ibm else None,
+        "full_edge_mask": _ibm_masks.full_edge_mask.asnumpy().astype(float) if do_ibm else None,
+        "half_edge_mask": _ibm_masks.half_edge_mask.asnumpy().astype(float) if do_ibm else None,
     }, f)
