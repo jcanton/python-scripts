@@ -7,7 +7,7 @@ import gt4py.next as gtx
 from icon4py.model.common.io import plots
 from icon4py.model.atmosphere.dycore import ibm
 
-main_dir = os.getcwd() + "/../icon4py/"
+main_dir = os.getcwd() + "/../icon4py.ibm_02/"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
 #savepoint_path = main_dir + "ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
 
@@ -18,12 +18,12 @@ main_dir = os.getcwd() + "/../icon4py/"
 #savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res2.5m.nc"
 #savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_2.5m_nlev40/ser_data"
-#grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
-#savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
+grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
+savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.25m.nc"
 #savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1.25m_nlev80/ser_data"
-grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1m.nc"
-savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1m_nlev100/ser_data"
+#grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1m.nc"
+#savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1m_nlev100/ser_data"
 
 importlib.reload(plots)
 plot = plots.Plot(

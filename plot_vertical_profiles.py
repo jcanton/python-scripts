@@ -172,7 +172,7 @@ plt.draw()
 # fig = plt.figure(3); plt.clf(); plt.show(block=False)
 # fig.suptitle(fname)
 # axs = fig.subplots(nrows=5, ncols=1, sharex=False, sharey=True)
-# 
+#
 # axs[0].plot(-np.average(vn     , axis=0),                                full_levels, '-o',  ms=4)
 # axs[1].plot( np.average(w      , axis=0),                                half_levels, '-o',  ms=4)
 # #
@@ -184,14 +184,14 @@ plt.draw()
 # #
 # #axs[4].plot( np.average(theta_v, axis=0),                                full_levels, '-o', ms=4)
 # axs[4].plot( np.average(theta_v, axis=0) - np.average(theta_v0, axis=0), full_levels, '--o', ms=4)
-# 
+#
 # for iax, ax in enumerate(axs):
 #     # grid (full and half levels)
 #     ax.set_yticks(full_levels, minor=False)
 #     ax.set_yticks(half_levels, minor=True)
 #     ax.yaxis.grid(which='major', color='#DDDDDD', linewidth=0.8)
 #     ax.yaxis.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
-# 
+#
 # axs[0].set_ylabel(r"$v_n$")
 # axs[1].set_ylabel(r"$w$")
 # axs[2].set_ylabel(r"$\rho$")

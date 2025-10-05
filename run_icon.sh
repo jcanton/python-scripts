@@ -9,14 +9,16 @@ SLURM_UENV="icon/25.2:v3"
 SLURM_UENV_VIEW="default"
 
 SLURM_PARTITION="normal"
-#SLURM_TIME="1-00:00:00"
-SLURM_TIME="1:00:00"
+SLURM_TIME="1-00:00:00"
+#SLURM_TIME="1:00:00"
 
-SLURM_JOBNAME="test_channel_950m_x_350m_res1m_nlev100_vdiff00100"
+#SLURM_JOBNAME="test_channel_950m_x_350m_res1m_nlev100_vdiff00100"
 #SLURM_JOBNAME="channel_950m_x_350m_res2.5m_nlev40_vdiff00015"
 #SLURM_JOBNAME="channel_950m_x_350m_res1.5m_nlev64_vdiff00005"
 #SLURM_JOBNAME="channel_950m_x_350m_res1.25m_nlev80_vdiff00001"
 #SLURM_JOBNAME="channel_950m_x_350m_res1m_nlev100_vdiff00001"
+
+SLURM_JOBNAME="channel_950m_x_350m_multibuilding_res1.5m_nlev64_vdiff00005"
 
 # =======================================
 # USER-EDITABLE: Default run settings
@@ -74,8 +76,8 @@ SLURM_LOGDIR="${SCRATCH}/logs"
 # =======================================
 if [ -z "$SLURM_JOB_ID" ]; then
     # Timestamp for unique log files
-    #timestamp=$(date +"%Y%m%d_%H%M%S")
-    timestamp=""
+    timestamp=$(date +"%Y%m%d_%H%M%S")
+    #timestamp=""
 
     # Pick log suffix based on sim type + booleans
     if [ "$run_simulation" = true ] && [ "$run_postprocess" = true ]; then
@@ -121,7 +123,7 @@ fi
 #
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
-export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm_01
+export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm_02
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
 export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
 
@@ -212,6 +214,7 @@ if [ "$run_simulation" = true ]; then
         echo "[INFO] ICON4PY_NUM_LEVELS     = ${ICON4PY_NUM_LEVELS}"
         echo "[INFO] ICON4PY_DTIME          = ${ICON4PY_DTIME}"
         echo "[INFO] ICON4PY_DIFFU_COEFF    = ${ICON4PY_DIFFU_COEFF}"
+        echo ""
 
         cd "$ICON4PY_DIR" || exit
         source .venv/bin/activate
@@ -237,13 +240,17 @@ if [ "$run_simulation" = true ]; then
                 "$ICON4PY_SAVEPOINT_PATH" \
                 --icon4py_driver_backend="$ICON4PY_BACKEND" \
                 --experiment_type=gauss3d_torus \
-                --grid_file="$ICON4PY_GRID_FILE_PATH" \
-                --enable_output
+                --grid_file="$ICON4PY_GRID_FILE_PATH" #\
+            #--enable_output
         fi
         ;;
 
     icon-f90)
         echo "[INFO] Preparing and running icon-f90 simulation..."
+        echo "[INFO] ICONF90_DIR = ${ICONF90_DIR}"
+        echo "[INFO] ICONF90_EXPERIMENT_NAME = ${ICONF90_EXPERIMENT_NAME}"
+        echo "[INFO] ICONF90_BUILD_FOLDER = ${ICONF90_BUILD_FOLDER}"
+        echo ""
 
         cd "$ICONF90_DIR" || exit
         cp run/exp.${ICONF90_EXPERIMENT_NAME} ${ICONF90_BUILD_FOLDER}/run/
