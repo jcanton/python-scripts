@@ -11,10 +11,11 @@ job_names=(
     "channel_950m_x_350m_res1.25m_nlev80_vdiff00050"
     "channel_950m_x_350m_res1.25m_nlev80_vdiff00100"
     "channel_950m_x_350m_res1.25m_nlev80_vdiff00150"
-    "channel_950m_x_350m_res1.5m_nlev64_vdiff00005"
-    "channel_950m_x_350m_res1.5m_nlev64_vdiff0001"
-    "channel_950m_x_350m_res1.5m_nlev64_vdiff0005"
-    "channel_950m_x_350m_res1.5m_nlev64_vdiff0010"
+    "channel_950m_x_350m_multibuilding_res1.5m_nlev64_vdiff00050"
+    #"channel_950m_x_350m_res1.5m_nlev64_vdiff00005"
+    #"channel_950m_x_350m_res1.5m_nlev64_vdiff0001"
+    #"channel_950m_x_350m_res1.5m_nlev64_vdiff0005"
+    #"channel_950m_x_350m_res1.5m_nlev64_vdiff0010"
 )
 for job_name in "${job_names[@]}"; do
     command="./run_icon.sh icon4py true false $job_name"

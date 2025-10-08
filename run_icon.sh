@@ -12,13 +12,9 @@ SLURM_PARTITION="normal"
 SLURM_TIME="1-00:00:00"
 #SLURM_TIME="1:00:00"
 
-#SLURM_JOBNAME="test_channel_950m_x_350m_res1m_nlev100_vdiff00100"
-#SLURM_JOBNAME="channel_950m_x_350m_res2.5m_nlev40_vdiff00015"
-#SLURM_JOBNAME="channel_950m_x_350m_res1.5m_nlev64_vdiff00005"
-#SLURM_JOBNAME="channel_950m_x_350m_res1.25m_nlev80_vdiff00001"
 #SLURM_JOBNAME="channel_950m_x_350m_res1m_nlev100_vdiff00001"
-
-SLURM_JOBNAME="channel_950m_x_350m_multibuilding_res1.5m_nlev64_vdiff00005"
+#SLURM_JOBNAME="channel_950m_x_350m_multibuilding_res1.5m_nlev64_vdiff00050"
+SLURM_JOBNAME="test_channel_950m_x_350m_res5m_nlev20.reference"
 
 # =======================================
 # USER-EDITABLE: Default run settings
@@ -27,8 +23,8 @@ SLURM_JOBNAME="channel_950m_x_350m_multibuilding_res1.5m_nlev64_vdiff00005"
 #   sbatch job.sh [sim_type] [run_simulation] [run_postprocess]
 # =======================================
 sim_type="icon4py" # or "icon-f90"
-run_simulation=true
-run_postprocess=false
+run_simulation=false
+run_postprocess=true
 
 # Override defaults with positional args if provided
 if [ -n "$1" ]; then sim_type="$1"; fi
@@ -123,13 +119,16 @@ fi
 #
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
-export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm_02
+export ICON4PY_DIR=$PROJECTS_DIR/icon4py
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
 export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
 
 # ------------------------------------------------------------------------------
 # python
+#
 export ICON4PY_RESTART_FREQUENCY=10000
+export ICON4PY_CHANNEL_PERTURBATION=0.001
+
 if [[ "$SLURM_JOBNAME" == *vdiff* ]]; then
     # get the diffusion coefficient from the job name
     diff_digits="${SLURM_JOBNAME##*vdiff}"
@@ -142,7 +141,7 @@ case $SLURM_JOBNAME in
 *res5m*)
     export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
     export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
-    export ICON4PY_PLOT_FREQUENCY=1500
+    export ICON4PY_PLOT_FREQUENCY=1
     export ICON4PY_NUM_LEVELS=20
     export ICON4PY_DTIME=0.04
     ;;
@@ -156,7 +155,7 @@ case $SLURM_JOBNAME in
 *res1.5m*)
     export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
     export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
-    export ICON4PY_PLOT_FREQUENCY=6000
+    export ICON4PY_PLOT_FREQUENCY=100
     export ICON4PY_NUM_LEVELS=64
     export ICON4PY_DTIME=0.01
     ;;
