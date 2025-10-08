@@ -1,11 +1,12 @@
-import os
 import importlib
-import numpy as np
-import matplotlib.pyplot as plt
+import os
 
 import gt4py.next as gtx
-from icon4py.model.common.io import plots
+import matplotlib.pyplot as plt
+import numpy as np
 from icon4py.model.atmosphere.dycore import ibm
+
+import plots
 
 main_dir = os.getcwd() + "/../icon4py.ibm_02/"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"

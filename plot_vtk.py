@@ -7,8 +7,9 @@ from concurrent.futures import ProcessPoolExecutor
 import gt4py.next as gtx
 import meshio
 import numpy as np
-from icon4py.model.common.io import plots
 from scipy.interpolate import griddata
+
+import plots
 
 try:
     from icon4py.model.atmosphere.dycore import ibm

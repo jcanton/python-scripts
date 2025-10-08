@@ -2,7 +2,8 @@ import os
 import pickle
 
 import gt4py.next as gtx
-from icon4py.model.common.io import plots
+
+import plots
 
 # -------------------------------------------------------------------------------
 # Some serialized data

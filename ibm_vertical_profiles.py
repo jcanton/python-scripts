@@ -4,9 +4,9 @@ import pickle
 import gt4py.next as gtx
 import matplotlib.pyplot as plt
 import numpy as np
-
-from icon4py.model.common.io import plots
 from scipy.interpolate import griddata
+
+import plots
 
 # -------------------------------------------------------------------------------
 #
