@@ -42,7 +42,7 @@ def load_state(fname, variables):
 # fname = os.path.join("data", "ibm_channel_reference_solution.pkl")
 fname = os.path.join(
     "../runs/icon4py/test_channel_950m_x_350m_res5m_nlev20.reference",
-    "end_of_timestep_000000000.pkl",
+    "end_of_timestep_000000009.pkl",
 )
 ref_state = load_state(fname, variables)
 
@@ -52,7 +52,7 @@ ref_state = load_state(fname, variables)
 #
 fname = os.path.join(
     "../runs/icon4py/test_channel_950m_x_350m_res5m_nlev20.updated",
-    "end_of_timestep_000000000.pkl",
+    "end_of_timestep_000000009.pkl",
 )
 cur_state = load_state(fname, variables)
 

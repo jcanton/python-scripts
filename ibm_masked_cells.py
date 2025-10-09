@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from icon4py.model.atmosphere.dycore import ibm
 
-import plots
+import icon4py_plots
 
 main_dir = os.getcwd() + "/../icon4py.ibm_02/"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
@@ -26,8 +26,8 @@ savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1.5m_nlev64/se
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1m.nc"
 #savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1m_nlev100/ser_data"
 
-importlib.reload(plots)
-plot = plots.Plot(
+importlib.reload(icon4py_plots)
+plot = icon4py_plots.Plot(
     savepoint_path=savepoint_path,
     grid_file_path=grid_file_path,
     backend=gtx.gtfn_cpu,

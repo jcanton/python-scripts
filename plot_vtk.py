@@ -9,7 +9,7 @@ import meshio
 import numpy as np
 from scipy.interpolate import griddata
 
-import plots
+import icon4py_plots
 
 try:
     from icon4py.model.atmosphere.dycore import ibm
@@ -140,7 +140,7 @@ def process_file(args):
     else:
         data_sponge_fc = None
 
-    plot = plots.Plot(
+    plot = icon4py_plots.Plot(
         savepoint_path=savepoint_path,
         grid_file_path=grid_file_path,
         backend=gtx.gtfn_cpu,

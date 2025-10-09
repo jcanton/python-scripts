@@ -3,7 +3,7 @@ import pickle
 
 import gt4py.next as gtx
 
-import plots
+import icon4py_plots
 
 # -------------------------------------------------------------------------------
 # Some serialized data
@@ -33,7 +33,7 @@ savepoint_path = os.path.join(icon4py_dir, ICON4PY_SAVEPOINT_PATH)
 # -------------------------------------------------------------------------------
 # Try  loading, else fallback
 #
-plot = plots.Plot(
+plot = icon4py_plots.Plot(
     savepoint_path=savepoint_path,
     grid_file_path=grid_file_path,
     backend=gtx.gtfn_cpu,

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import griddata
 
-import plots
+import icon4py_plots
 
 # -------------------------------------------------------------------------------
 #
@@ -24,7 +24,7 @@ savepoint_path = (
 # savepoint_path = "/scratch/mch/jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data/"
 # imgs_dir = "runxx_ibm_check_slip_noslip"
 
-plot = plots.Plot(
+plot = icon4py_plots.Plot(
     savepoint_path=savepoint_path,
     grid_file_path=grid_file_path,
     backend=gtx.gtfn_cpu,
