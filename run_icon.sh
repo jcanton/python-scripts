@@ -312,8 +312,8 @@ if [ "$run_postprocess" = true ]; then
         source "$SCRIPTS_DIR/.venv/bin/activate"
 
         # compute temporal averages
-        #python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS" "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
-        python "$SCRIPTS_DIR/temporal_average.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+        #python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS"
+        python "$SCRIPTS_DIR/temporal_average.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH" "$ICON4PY_DTIME" "$ICON4PY_PLOT_FREQUENCY"
 
         # generate vtu files
         python "$SCRIPTS_DIR/plot_vtk.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"

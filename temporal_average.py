@@ -6,7 +6,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import gt4py.next as gtx
 import numpy as np
-from icon4py.model.common.io import plots
+import icon4py_plots
 
 
 def process_files(args):
@@ -19,7 +19,7 @@ def process_files(args):
     #    return  # Skip if already processed
 
     # NOTE: plot must be created in each process, as it is not picklable.
-    plot = plots.Plot(
+    plot = icon4py_plots.Plot(
         savepoint_path=savepoint_path,
         grid_file_path=grid_file_path,
         backend=gtx.gtfn_cpu,
@@ -70,15 +70,17 @@ def process_files(args):
 
 # ===============================================================================
 if __name__ == "__main__":
-    if len(sys.argv) < 5:
+    if len(sys.argv) < 7:
         print(
-            "Usage: python temporal_average.py <num_workers> <python_files_dir> <savepoint_path> <grid_file_path>"
+            "Usage: python temporal_average.py <num_workers> <python_files_dir> <savepoint_path> <grid_file_path> <dtime> <plot_frequency>"
         )
         sys.exit(1)
     num_workers = int(sys.argv[1])
     output_files_dir = sys.argv[2]
     savepoint_path = sys.argv[3]
     grid_file_path = sys.argv[4]
+    dtime = float(sys.argv[5])
+    plot_frequency = int(sys.argv[6])
 
     avgs_dir = os.path.join(output_files_dir, "avgs")
     if not os.path.exists(avgs_dir):
@@ -103,10 +105,8 @@ if __name__ == "__main__":
     print("")
 
     # timestamps
-    dt = 0.04
-    out_int = 1500
     sim_hours = 10
-    files_per_hour = int(3600 / dt / out_int)
+    files_per_hour = int(3600 / dtime / plot_frequency)
 
     # Prepare arguments for each file
     tasks = []
