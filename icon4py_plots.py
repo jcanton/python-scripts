@@ -29,7 +29,6 @@ import numpy as np
 import xarray as xr
 
 
-
 # Prevent matplotlib logging spam
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 # get the the logger with the name 'PIL'
@@ -104,7 +103,6 @@ class Plot:
         n_levels_to_plot: int = 2,
         backend: gtx.backend.Backend = gtx.gtfn_cpu,
     ):
-
         data_provider = sb.IconSerialDataProvider(
             backend=backend, fname_prefix="icon_pydycore", path=savepoint_path
         )
@@ -122,16 +120,18 @@ class Plot:
         self._edge_2_cell_vector_rbf_interpolation = (
             edge_2_cell_vector_rbf_interpolation.with_backend(self._backend)
         )
-        self._mo_math_divrot_rot_vertex_ri_dsl = mo_math_divrot_rot_vertex_ri_dsl.with_backend(
+        self._mo_math_divrot_rot_vertex_ri_dsl = (
+            mo_math_divrot_rot_vertex_ri_dsl.with_backend(self._backend)
+        )
+        self._interpolate_to_full_levels = (
+            interpolate_from_half_to_full_levels.with_backend(self._backend)
+        )
+        self._interpolate_from_vertices_to_cell = (
+            interpolate_from_vertices_to_cell.with_backend(self._backend)
+        )
+        self._compute_tangential_wind = compute_tangential_wind.with_backend(
             self._backend
         )
-        self._interpolate_to_full_levels = interpolate_from_half_to_full_levels.with_backend(
-            self._backend
-        )
-        self._interpolate_from_vertices_to_cell = interpolate_from_vertices_to_cell.with_backend(
-            self._backend
-        )
-        self._compute_tangential_wind = compute_tangential_wind.with_backend(self._backend)
 
         if grid_file_path != "":
             self.grid_file = xr.open_dataset(grid_file_path)
@@ -177,12 +177,16 @@ class Plot:
             os.makedirs(self.PLOT_IMGS_DIR)
         self.plot_counter = 0
 
-    def rad2cart(self, vert_lon: np.ndarray, vert_lat: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def rad2cart(
+        self, vert_lon: np.ndarray, vert_lat: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         vert_x = (
-            vert_lon * self.DOMAIN_LENGTH / (2.0 * self.X_BOUNDARY_RAD) + self.DOMAIN_LENGTH / 2.0
+            vert_lon * self.DOMAIN_LENGTH / (2.0 * self.X_BOUNDARY_RAD)
+            + self.DOMAIN_LENGTH / 2.0
         )
         vert_y = (
-            vert_lat * self.DOMAIN_HEIGHT / (2.0 * self.Y_BOUNDARY_RAD) + self.DOMAIN_HEIGHT / 2.0
+            vert_lat * self.DOMAIN_HEIGHT / (2.0 * self.Y_BOUNDARY_RAD)
+            + self.DOMAIN_HEIGHT / 2.0
         )
 
         return vert_x, vert_y
@@ -220,8 +224,12 @@ class Plot:
             # return (check_three_numbers(vert_x) or check_three_numbers(vert_y)) \
             #        and ((np.abs(vert_x) == X_BOUNDARY).any() or (np.abs(vert_y) == Y_BOUNDARY).any())
             return (
-                check_three_numbers(vert_x) and (np.abs(vert_x) == self.X_BOUNDARY_RAD).any()
-            ) or (check_three_numbers(vert_y) and (np.abs(vert_y) == self.Y_BOUNDARY_RAD).any())
+                check_three_numbers(vert_x)
+                and (np.abs(vert_x) == self.X_BOUNDARY_RAD).any()
+            ) or (
+                check_three_numbers(vert_y)
+                and (np.abs(vert_y) == self.Y_BOUNDARY_RAD).any()
+            )
 
         tri.all_edges = tri.edges.copy()
         tri.n_all_triangles = tri.triangles.shape[0]
@@ -264,7 +272,9 @@ class Plot:
             # Mask out edges that are part of boundary triangles
             edges_mask = np.ones(tri.all_edges.shape[0], dtype=bool)
             for i, edge in enumerate(tri.all_edges):
-                if any(np.array_equal(edge, filtered_edge) for filtered_edge in tri.edges):
+                if any(
+                    np.array_equal(edge, filtered_edge) for filtered_edge in tri.edges
+                ):
                     edges_mask[i] = False
             tri.edges_mask = edges_mask
         else:
@@ -297,19 +307,29 @@ class Plot:
             # clean up the grid
             # Adjust x values to coincide with the periodic boundary
             vert_x = np.where(
-                np.abs(vert_x - self.X_BOUNDARY_RAD) < 1e-14, self.X_BOUNDARY_RAD, vert_x
+                np.abs(vert_x - self.X_BOUNDARY_RAD) < 1e-14,
+                self.X_BOUNDARY_RAD,
+                vert_x,
             )
             vert_x = np.where(
-                np.abs(vert_x + self.X_BOUNDARY_RAD) < 1e-14, -self.X_BOUNDARY_RAD, vert_x
+                np.abs(vert_x + self.X_BOUNDARY_RAD) < 1e-14,
+                -self.X_BOUNDARY_RAD,
+                vert_x,
             )
             # shift all to -X_BOUNDARY
-            vert_x = np.where(vert_x == self.X_BOUNDARY_RAD, -self.X_BOUNDARY_RAD, vert_x)
+            vert_x = np.where(
+                vert_x == self.X_BOUNDARY_RAD, -self.X_BOUNDARY_RAD, vert_x
+            )
             # Adjust y values to coincide with the periodic boundary
             vert_y = np.where(
-                np.abs(vert_y - self.Y_BOUNDARY_RAD) < 1e-14, self.Y_BOUNDARY_RAD, vert_y
+                np.abs(vert_y - self.Y_BOUNDARY_RAD) < 1e-14,
+                self.Y_BOUNDARY_RAD,
+                vert_y,
             )
             vert_y = np.where(
-                np.abs(vert_y + self.Y_BOUNDARY_RAD) < 1e-14, -self.Y_BOUNDARY_RAD, vert_y
+                np.abs(vert_y + self.Y_BOUNDARY_RAD) < 1e-14,
+                -self.Y_BOUNDARY_RAD,
+                vert_y,
             )
         else:
             # cartesian coordinates
@@ -368,8 +388,8 @@ class Plot:
             vn_gtx = gtx.as_field((dims.EdgeDim, dims.KDim), vn)
         else:
             vn_gtx = vn
-        u_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim, backend=self._backend)
-        v_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim, backend=self._backend)
+        u_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim)
+        v_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim)
         self._edge_2_cell_vector_rbf_interpolation(
             p_e_in=vn_gtx,
             ptr_coeff_1=self.interpolation_savepoint.rbf_vec_coeff_c1(),
@@ -389,7 +409,7 @@ class Plot:
             vn_gtx = gtx.as_field((dims.EdgeDim, dims.KDim), vn)
         else:
             vn_gtx = vn
-        vt_gtx = data_alloc.zero_field(self.grid, dims.EdgeDim, dims.KDim, backend=self._backend)
+        vt_gtx = data_alloc.zero_field(self.grid, dims.EdgeDim, dims.KDim)
         self._compute_tangential_wind(
             vn=vn_gtx,
             rbf_vec_coeff_e=self.interpolation_savepoint.rbf_vec_coeff_e(),
@@ -407,12 +427,8 @@ class Plot:
             vn_gtx = gtx.as_field((dims.EdgeDim, dims.KDim), vn)
         else:
             vn_gtx = vn
-        vertvort_gtx = data_alloc.zero_field(
-            self.grid, dims.VertexDim, dims.KDim, backend=self._backend
-        )
-        cellvort_gtx = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
+        vertvort_gtx = data_alloc.zero_field(self.grid, dims.VertexDim, dims.KDim)
+        cellvort_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim)
         self._mo_math_divrot_rot_vertex_ri_dsl(
             vec_e=vn_gtx,
             geofac_rot=self.interpolation_savepoint.geofac_rot(),
@@ -439,9 +455,7 @@ class Plot:
             w_half_gtx = gtx.as_field((dims.CellDim, dims.KDim), w_half)
         else:
             w_half_gtx = w_half
-        w_full_gtx = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
+        w_full_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim)
         self._interpolate_to_full_levels(
             half_field=w_half_gtx,
             full_field=w_full_gtx,
@@ -468,7 +482,10 @@ class Plot:
             axs = axs.flatten()
         else:
             axs = [axs]
-        caxs = [make_axes_locatable(ax).append_axes("right", size="3%", pad=0.02) for ax in axs]
+        caxs = [
+            make_axes_locatable(ax).append_axes("right", size="3%", pad=0.02)
+            for ax in axs
+        ]
         return fig, axs, caxs
 
     def plot_levels(
@@ -512,7 +529,9 @@ class Plot:
             else:
                 cmap = "YlOrRd_r"
                 # cmap = "gist_rainbow_r"
-            norm = lambda cmin, cmax: colors.Normalize(vmin=min(-1e-9, cmin), vmax=max(1e-9, cmax))
+            norm = lambda cmin, cmax: colors.Normalize(
+                vmin=min(-1e-9, cmin), vmax=max(1e-9, cmax)
+            )
 
         match data.shape[0]:
             case self.grid.num_cells:
@@ -554,11 +573,21 @@ class Plot:
             axs[i].triplot(self.tri, color="k", linewidth=0.25)
             if "vvec_cell" in file_name:
                 axs[i].quiver(
-                    self.tri.cell_x, self.tri.cell_y, u[:, -1 - i], v[:, -1 - i], scale=qscale
+                    self.tri.cell_x,
+                    self.tri.cell_y,
+                    u[:, -1 - i],
+                    v[:, -1 - i],
+                    scale=qscale,
                 )
             elif "vvec_edge" in file_name:
-                u = vn[:, -1 - i] * self.primal_normal[0] + vt[:, -1 - i] * self.primal_tangent[0]
-                v = vn[:, -1 - i] * self.primal_normal[1] + vt[:, -1 - i] * self.primal_tangent[1]
+                u = (
+                    vn[:, -1 - i] * self.primal_normal[0]
+                    + vt[:, -1 - i] * self.primal_tangent[0]
+                )
+                v = (
+                    vn[:, -1 - i] * self.primal_normal[1]
+                    + vt[:, -1 - i] * self.primal_tangent[1]
+                )
                 axs[i].quiver(self.tri.edge_x, self.tri.edge_y, u, v, scale=qscale)
             axs[i].set_aspect("equal")
             axs[i].set_title(f"Level {-i}")
@@ -575,9 +604,21 @@ class Plot:
 
         self.plot_counter += 1
         if "vvec_cell" in file_name:
-            return axs, self.tri.cell_x, self.tri.cell_y, u[:, -num_levels:], v[:, -num_levels:]
+            return (
+                axs,
+                self.tri.cell_x,
+                self.tri.cell_y,
+                u[:, -num_levels:],
+                v[:, -num_levels:],
+            )
         elif "vvec_edge" in file_name:
-            return axs, self.tri.edge_x, self.tri.edge_y, vn[:, -num_levels:], vt[:, -num_levels:]
+            return (
+                axs,
+                self.tri.edge_x,
+                self.tri.edge_y,
+                vn[:, -num_levels:],
+                vt[:, -num_levels:],
+            )
         else:
             return axs, None, None, None, None
 
@@ -630,7 +671,9 @@ class Plot:
             else:
                 cmap = "YlOrRd_r"
                 # cmap = "gist_rainbow_r"
-            norm = lambda cmin, cmax: colors.Normalize(vmin=min(-1e-9, cmin), vmax=max(1e-9, cmax))
+            norm = lambda cmin, cmax: colors.Normalize(
+                vmin=min(-1e-9, cmin), vmax=max(1e-9, cmax)
+            )
 
         match data.shape[0]:
             case self.grid.num_cells:
@@ -654,7 +697,12 @@ class Plot:
             )
         else:
             plot_sec = lambda x, y, data, i: axs[i].pcolormesh(
-                x, y, data[:-1, :-1], cmap=cmap, norm=norm(data.min(), data.max()), shading="flat"
+                x,
+                y,
+                data[:-1, :-1],
+                cmap=cmap,
+                norm=norm(data.min(), data.max()),
+                shading="flat",
             )
 
         for i in range(num_sections):
@@ -662,7 +710,10 @@ class Plot:
                 if "vvec_cell" in file_name:
                     data = (v**2 + w**2) ** 0.5
                 idxs = self._get_section_indexes(
-                    coords_x, coords_y, s_x=sections_x[i], dist=self.tri.height_length * 2 / 3
+                    coords_x,
+                    coords_y,
+                    s_x=sections_x[i],
+                    dist=self.tri.height_length * 2 / 3,
                 )
                 x_coords = np.tile(coords_y[idxs], (self.grid.num_levels, 1)).T
                 y_coords = self.full_level_heights[idxs, :]
@@ -701,7 +752,9 @@ class Plot:
                 axs[i].set_title(f"Section at y = {sections_y[i - len(sections_x)]}")
             cbar = fig.colorbar(im, cax=caxs[i], orientation="vertical")
             cbar.set_ticks(np.linspace(cbar.vmin, cbar.vmax, 5))
-            cbar.set_ticklabels([f"{c:.2f}" for c in np.linspace(cbar.vmin, cbar.vmax, 5)])
+            cbar.set_ticklabels(
+                [f"{c:.2f}" for c in np.linspace(cbar.vmin, cbar.vmax, 5)]
+            )
             # axs[i].set_aspect('equal')
 
         fig.subplots_adjust(wspace=0.12, hspace=0.1)
