@@ -2,6 +2,7 @@ import logging
 import os
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 from gt4py.next.ffront.fbuiltins import neighbor_sum
 from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import (
     compute_tangential_wind,
@@ -100,8 +101,8 @@ class Plot:
         self,
         savepoint_path: str,
         grid_file_path: str,
-        n_levels_to_plot: int = 2,
-        backend: gtx.backend.Backend = gtx.gtfn_cpu,
+        backend: gtx_typing.Backend | None,
+        n_levels_to_plot: int=2,
     ):
         data_provider = sb.IconSerialDataProvider(
             backend=backend, fname_prefix="icon_pydycore", path=savepoint_path

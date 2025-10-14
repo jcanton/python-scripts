@@ -13,10 +13,17 @@ def process_files(args):
     output_files, out_path, savepoint_path, grid_file_path = args
 
     # Actually don't skip, to allow re-processing because I am computing them
-    # while the sim is running
+    # while the sim is running (but some are now very time-consuming to
+    # re-compute all the time)
     #if os.path.exists(out_path):
     #    print(f"Skipping {out_path}, already exists.", flush=True)
     #    return  # Skip if already processed
+
+    num_files = len(output_files)
+    print(f"Processing {num_files} files to create {out_path}", flush=True)
+
+    if num_files == 0:
+        return
 
     # NOTE: plot must be created in each process, as it is not picklable.
     plot = icon4py_plots.Plot(
@@ -24,8 +31,6 @@ def process_files(args):
         grid_file_path=grid_file_path,
         backend=gtx.gtfn_cpu,
     )
-
-    print(f"Processing {len(output_files)} files to create {out_path}", flush=True)
 
     vn = w = rho = exner = theta_v = None
 
@@ -45,13 +50,11 @@ def process_files(args):
                 exner += state["exner"]
                 theta_v += state["theta_v"]
 
-    n = len(output_files)
-    if n > 0:
-        vn /= n
-        w /= n
-        rho /= n
-        exner /= n
-        theta_v /= n
+    vn /= num_files
+    w /= num_files
+    rho /= num_files
+    exner /= num_files
+    theta_v /= num_files
 
     u_cf, v_cf = plot._vec_interpolate_to_cell_center(vn)
     w_cf = plot._scal_interpolate_to_full_levels(w)

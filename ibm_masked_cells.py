@@ -8,7 +8,7 @@ from icon4py.model.atmosphere.dycore import ibm
 
 import icon4py_plots
 
-main_dir = os.getcwd() + "/../icon4py.ibm_02/"
+main_dir = os.getcwd() + "/../icon4py/"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
 #savepoint_path = main_dir + "ser_data/exclaim_gauss3d.uniform800_flat/ser_data/"
 
@@ -19,12 +19,16 @@ main_dir = os.getcwd() + "/../icon4py.ibm_02/"
 #savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res2.5m.nc"
 #savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_2.5m_nlev40/ser_data"
-grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
-savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
+#grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
+#savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.25m.nc"
 #savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1.25m_nlev80/ser_data"
 #grid_file_path = main_dir + "testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1m.nc"
 #savepoint_path = main_dir + "ser_data/exclaim_channel_950x350x100_1m_nlev100/ser_data"
+
+# CHANNEL_IBM test case
+grid_file_path = main_dir + "testdata/grids/torus_50000x5000_res500/Torus_Triangles_50000m_x_5000m_res500m.nc"
+savepoint_path = main_dir + "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
 
 importlib.reload(icon4py_plots)
 plot = icon4py_plots.Plot(
@@ -44,11 +48,11 @@ _ibm_masks = ibm.ImmersedBoundaryMethodMasks(
 data = _ibm_masks.full_cell_mask.asnumpy().astype(float)[:,-1]
 
 plt.figure(1); plt.clf(); plt.show(block=False)
-plt.tripcolor(plot.tri, data, edgecolor='none', shading='flat')
+plt.tripcolor(plot.tri, data, edgecolor='red', shading='flat')
 #plt.xticks(np.arange(0,1000,50))
 #plt.yticks(np.arange(0,1000,50))
-plt.xticks(np.arange(0,1000,50))
-plt.yticks(np.arange(0, 400,50))
+#plt.xticks(np.arange(0,1000,50))
+#plt.yticks(np.arange(0, 400,50))
 plt.axis('equal')
 plt.draw()
 plt.savefig("ibm_masked_cells.png", dpi=1200)
