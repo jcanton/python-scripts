@@ -10,11 +10,11 @@ SLURM_UENV_VIEW="default"
 
 SLURM_PARTITION="normal"
 SLURM_TIME="1-00:00:00"
-#SLURM_TIME="1:00:00"
+#SLURM_TIME="12:00:00"
 
 #SLURM_JOBNAME="channel_950m_x_350m_res1m_nlev100_vdiff00001"
 #SLURM_JOBNAME="channel_950m_x_350m_multibuilding_res1.5m_nlev64_vdiff00050"
-SLURM_JOBNAME="test_channel_950m_x_350m_res5m_nlev20.reference"
+#SLURM_JOBNAME="test_channel_950m_x_350m_res5m_nlev20.reference"
 
 # =======================================
 # USER-EDITABLE: Default run settings
@@ -102,16 +102,12 @@ if [ -z "$SLURM_JOB_ID" ]; then
             --view="$SLURM_UENV_VIEW" \
             --partition="$SLURM_PARTITION" \
             --time="$SLURM_TIME" \
-            --job-name="$SLURM_JOBNAME" \
-            --output="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
-            --error="$SLURM_LOGDIR/%x_${log_suffix}_${timestamp}.log" \
-            "$0" "$sim_type" "$run_simulation" "$run_postprocess"
+            --job-name="${log_suffix}_$SLURM_JOBNAME" \
+            --output="$SLURM_LOGDIR/%x_${timestamp}.log" \
+            --error="$SLURM_LOGDIR/%x_${timestamp}.log" \
+            "$0" "$sim_type" "$run_simulation" "$run_postprocess" "$SLURM_JOBNAME"
         exit
     fi
-else
-    echo "Running Slurm job $SLURM_JOB_ID"
-    # override job name if inside slurm
-    SLURM_JOBNAME=$SLURM_JOB_NAME
 fi
 
 # ==============================================================================
@@ -141,7 +137,7 @@ case $SLURM_JOBNAME in
 *res5m*)
     export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
     export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
-    export ICON4PY_PLOT_FREQUENCY=1
+    export ICON4PY_PLOT_FREQUENCY=1500
     export ICON4PY_NUM_LEVELS=20
     export ICON4PY_DTIME=0.04
     ;;
@@ -155,7 +151,7 @@ case $SLURM_JOBNAME in
 *res1.5m*)
     export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/ser_data/exclaim_channel_950x350x100_1.5m_nlev64/ser_data"
     export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/gauss3d_torus/Channel_950m_x_350m_res1.5m.nc"
-    export ICON4PY_PLOT_FREQUENCY=100
+    export ICON4PY_PLOT_FREQUENCY=6000
     export ICON4PY_NUM_LEVELS=64
     export ICON4PY_DTIME=0.01
     ;;
@@ -176,6 +172,12 @@ case $SLURM_JOBNAME in
 *)
     echo "invalid jobname"
     exit 1
+    ;;
+esac
+
+case $SLURM_JOBNAME in
+*multibuilding*)
+    export ICON4PY_PLOT_FREQUENCY=100
     ;;
 esac
 
