@@ -173,12 +173,12 @@ case $SLURM_JOBNAME in
 *test_channel_ibm*)
     export ICON4PY_SAVEPOINT_PATH="${ICON4PY_DIR}/testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
     export ICON4PY_GRID_FILE_PATH="${ICON4PY_DIR}/testdata/grids/torus_50000x5000_res500/Torus_Triangles_50000m_x_5000m_res500m.nc"
-    export ICON4PY_NUM_LEVELS=35
+    export ICON4PY_NUM_LEVELS="35"
     export ICON4PY_END_DATE="0001-01-01T00:00:08"
-    export ICON4PY_DTIME=4.0
-    export ICON4PY_PLOT_FREQUENCY=1
-    export ICON4PY_CHANNEL_SPONGE_LENGTH=5000.0
-    export ICON4PY_CHANNEL_PERTURBATION=0.0
+    export ICON4PY_DTIME="4.0"
+    export ICON4PY_PLOT_FREQUENCY="1"
+    export ICON4PY_CHANNEL_SPONGE_LENGTH="5000.0"
+    export ICON4PY_CHANNEL_PERTURBATION="0.0"
     export ICON4PY_DIFFU_COEFF="0.001"
     ;;
 *)
@@ -239,23 +239,13 @@ if [ "$run_simulation" = true ]; then
 
         export ICON4PY_OUTPUT_DIR="$OUTPUT_DIR"
 
-        if [[ "$ICON4PY_DIR" == *ibm_01* ]]; then
-            python \
-                model/driver/src/icon4py/model/driver/icon4py_driver.py \
-                "$ICON4PY_SAVEPOINT_PATH" \
-                --icon4py_driver_backend="$ICON4PY_BACKEND" \
-                --experiment_type=gauss3d_torus \
-                --grid_root=2 --grid_level=0 \
-                --enable_output
-        else
-            python \
-                model/driver/src/icon4py/model/driver/icon4py_driver.py \
-                "$ICON4PY_SAVEPOINT_PATH" \
-                --icon4py_driver_backend="$ICON4PY_BACKEND" \
-                --experiment_type=gauss3d_torus \
-                --grid_file="$ICON4PY_GRID_FILE_PATH" #\
-            #--enable_output
-        fi
+        python \
+            model/driver/src/icon4py/model/driver/icon4py_driver.py \
+            "$ICON4PY_SAVEPOINT_PATH" \
+            --icon4py_driver_backend="$ICON4PY_BACKEND" \
+            --experiment_type=gauss3d_torus \
+            --grid_file="$ICON4PY_GRID_FILE_PATH" #\
+        #--enable_output
         ;;
 
     icon-f90)
