@@ -10,12 +10,14 @@ SLURM_UENV_VIEW="default"
 
 SLURM_PARTITION="normal"
 #SLURM_TIME="1-00:00:00"
-SLURM_TIME="12:00:00"
+SLURM_TIME="1:00:00"
 
 #SLURM_JOBNAME="channel_950m_x_350m_res1m_nlev100_vdiff00001"
 #SLURM_JOBNAME="channel_950m_x_350m_multibuilding_res1.5m_nlev64_vdiff00050"
 #SLURM_JOBNAME="test_channel_950m_x_350m_res5m_nlev20.reference"
-SLURM_JOBNAME="test_channel_ibm"
+#SLURM_JOBNAME="test_channel_ibm"
+
+SLURM_JOBNAME="test_channel_blueline"
 
 # =======================================
 # USER-EDITABLE: Default run settings
@@ -23,7 +25,7 @@ SLURM_JOBNAME="test_channel_ibm"
 #   ./job.sh [sim_type] [run_simulation] [run_postprocess]
 #   sbatch job.sh [sim_type] [run_simulation] [run_postprocess]
 # =======================================
-sim_type="icon4py" # or "icon-f90"
+sim_type="iconf90" # or "iconf90"
 run_simulation=true
 run_postprocess=true
 
@@ -94,7 +96,7 @@ if [ -z "$SLURM_JOB_ID" ]; then
     if [ "$CLUSTER_NAME" = "mac" ]; then
         echo "[INFO] Running locally on macOS, skipping sbatch."
         # Continue script execution (do not exit)
-    elif [ "$sim_type" != "icon-f90" ]; then
+    elif [ "$sim_type" != "iconf90" ]; then
         # Submit self to Slurm with parameters preserved
         sbatch \
             --account="$SLURM_ACCOUNT" \
@@ -118,7 +120,7 @@ export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
 export ICON4PY_DIR=$PROJECTS_DIR/icon4py
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
-export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim/icon-exclaim.teamx
+export ICONF90_DIR=$PROJECTS_DIR/icon-exclaim
 
 # ------------------------------------------------------------------------------
 # python
@@ -182,8 +184,10 @@ case $SLURM_JOBNAME in
     export ICON4PY_DIFFU_COEFF="0.001"
     ;;
 *)
-    echo "invalid jobname"
-    exit 1
+    if [ "$run_simulation" = "icon4py" ]; then
+        echo "invalid jobname"
+        exit 1
+    fi
     ;;
 esac
 
@@ -195,8 +199,8 @@ esac
 
 # ------------------------------------------------------------------------------
 # fortran
-export ICONF90_EXPERIMENT_NAME="teamx_intercomparison"
-export ICONF90_BUILD_FOLDER="build_cpu"
+export ICONF90_EXPERIMENT_NAME="exclaim_channel"
+export ICONF90_BUILD_FOLDER="build_gpu2py"
 
 # ------------------------------------------------------------------------------
 # Unified output dir (per sim_type)
@@ -248,11 +252,11 @@ if [ "$run_simulation" = true ]; then
         #--enable_output
         ;;
 
-    icon-f90)
-        echo "[INFO] Preparing and running icon-f90 simulation..."
-        echo "[INFO] ICONF90_DIR = ${ICONF90_DIR}"
+    iconf90)
+        echo "[INFO] Preparing and running iconf90 simulation..."
+        echo "[INFO] ICONF90_DIR             = ${ICONF90_DIR}"
         echo "[INFO] ICONF90_EXPERIMENT_NAME = ${ICONF90_EXPERIMENT_NAME}"
-        echo "[INFO] ICONF90_BUILD_FOLDER = ${ICONF90_BUILD_FOLDER}"
+        echo "[INFO] ICONF90_BUILD_FOLDER    = ${ICONF90_BUILD_FOLDER}"
         echo ""
 
         cd "$ICONF90_DIR" || exit
@@ -274,13 +278,10 @@ if [ "$run_simulation" = true ]; then
         #sed -i '/export mpi_procs_pernode/c\export mpi_procs_pernode=4' exp.${ICONF90_EXPERIMENT_NAME}.run
 
         # submit the experiment
-        echo "[INFO] Queuing icon-f90 with sbatch..."
+        echo "[INFO] Queuing iconf90 with sbatch..."
         output=$(sbatch exp.${ICONF90_EXPERIMENT_NAME}.run)
         job_id=$(echo "$output" | awk '{print $4}')
         logfile="LOG.exp.${ICONF90_EXPERIMENT_NAME}.run.${job_id}.o"
-
-        rm logfile.log
-        ln -s "$logfile" logfile.log
 
         # create postpro job
         postpro_script="move_outputs_${ICONF90_EXPERIMENT_NAME}.sh"
