@@ -199,7 +199,7 @@ esac
 
 # ------------------------------------------------------------------------------
 # fortran
-export ICONF90_EXPERIMENT_NAME="exclaim_channel"
+export ICONF90_EXPERIMENT_NAME="exclaim_gauss3d_sb"
 export ICONF90_BUILD_FOLDER="build_gpu2py"
 
 # ------------------------------------------------------------------------------
@@ -265,6 +265,10 @@ if [ "$run_simulation" = true ]; then
         cd ${ICONF90_BUILD_FOLDER} || exit
         ./make_runscripts ${ICONF90_EXPERIMENT_NAME}
 
+        # The following folder is created by the slurm script, but I need it to copy the channel data
+        mkdir -p experiments/${ICONF90_EXPERIMENT_NAME}
+        cp "${SCRIPTS_DIR}/data/LeeMoser_chan5200.mean" experiments/${ICONF90_EXPERIMENT_NAME}/
+
         cd run || exit
 
         # add/fix slurm stuff
@@ -276,6 +280,18 @@ if [ "$run_simulation" = true ]; then
         sed -i '/#SBATCH --nodes=/c\#SBATCH --nodes='"$SLURM_NODES" exp.${ICONF90_EXPERIMENT_NAME}.run
         #sed -i '/#SBATCH --ntasks-per-node=/c\#SBATCH --ntasks-per-node=4' exp.${ICONF90_EXPERIMENT_NAME}.run
         #sed -i '/export mpi_procs_pernode/c\export mpi_procs_pernode=4' exp.${ICONF90_EXPERIMENT_NAME}.run
+
+        # Try to setup the python enviroment properly for icon4py but it
+        # doesn't work for now, fucking uenvs...
+        export PATH="$NON_CONDA_PATH"
+        export PYTHONPATH="$NON_CONDA_PYTHONPATH"
+        export CONDA_LOADED="no"
+        source "${ICONF90_DIR}/externals/icon4py/.venv/bin/activate"
+        sed -i '/export PYTHONPATH=/c\export PYTHONPATH="/user-environment/env/default/python/pp_ser"' exp.${ICONF90_EXPERIMENT_NAME}.run
+        sed -i '/export PYTHONPATH=/a source '"${ICONF90_DIR}/externals/icon4py/.venv/bin/activate" exp.${ICONF90_EXPERIMENT_NAME}.run
+        sed -i '/export PYTHONPATH=/a echo "PYTHONPATH ${PYTHONPATH}"' exp.${ICONF90_EXPERIMENT_NAME}.run
+        sed -i '/export PYTHONPATH=/a echo "PATH ${PATH}"' exp.${ICONF90_EXPERIMENT_NAME}.run
+        sed -i '/export PYTHONPATH=/a echo "CONDA LOADED ${CONDA_LOADED}"' exp.${ICONF90_EXPERIMENT_NAME}.run
 
         # submit the experiment
         echo "[INFO] Queuing iconf90 with sbatch..."
