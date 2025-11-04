@@ -124,10 +124,14 @@ def process_file(args):
     data_w = state["w"]
     data_vn = state["vn"]
 
-    initial_condition_path = os.path.join(os.path.dirname(file_path), "initial_condition_ibm.pkl")
+    initial_condition_path = os.path.join(
+        os.path.dirname(file_path), "initial_condition_ibm.pkl"
+    )
     found_ic = os.path.exists(initial_condition_path)
     if not found_ic:
-        initial_condition_path = os.path.join(os.path.dirname(file_path), "initial_condition.pkl")
+        initial_condition_path = os.path.join(
+            os.path.dirname(file_path), "initial_condition.pkl"
+        )
     if found_ic:
         with open(initial_condition_path, "rb") as f:
             ic_state = pickle.load(f)
@@ -155,6 +159,16 @@ def process_file(args):
 
     filename = os.path.basename(file_path).split(".")[0]
     print(f"Plotting {filename}")
+
+    data_rho = data_rho[: plot.grid.num_cells, :]
+    data_theta_v = data_theta_v[: plot.grid.num_cells, :]
+    data_exner = data_exner[: plot.grid.num_cells, :]
+    data_w = data_w[: plot.grid.num_cells, :]
+    data_vn = data_vn[: plot.grid.num_edges, :]
+    if found_ic:
+        ic_rho = ic_rho[: plot.grid.num_cells, :]
+        ic_theta_v = ic_theta_v[: plot.grid.num_cells, :]
+        ic_exner = ic_exner[: plot.grid.num_cells, :]
 
     u_cf, v_cf = plot._vec_interpolate_to_cell_center(data_vn)
     w_cf = plot._scal_interpolate_to_full_levels(data_w)
@@ -199,22 +213,10 @@ if __name__ == "__main__":
     if not os.path.exists(vtks_dir):
         os.makedirs(vtks_dir)
 
-    output_files = glob.glob(
-        os.path.join(output_files_dir, "?????_initial_condition*.pkl")
-    )
-    output_files += glob.glob(
-        os.path.join(output_files_dir, "??????_end_of_timestep_*pkl")
-    )
-    output_files += glob.glob(
-        os.path.join(output_files_dir, "initial_condition*.pkl")
-    )
-    output_files += glob.glob(
-        os.path.join(output_files_dir, "end_of_timestep_*.pkl")
-    )
-    output_files += glob.glob(os.path.join(output_files_dir, "?????_debug_*.pkl"))
-    output_files += glob.glob(
-        os.path.join(output_files_dir, "avgs", "avg_hour*.pkl")
-    )
+    output_files = glob.glob(os.path.join(output_files_dir, "initial_condition*.pkl"))
+    output_files += glob.glob(os.path.join(output_files_dir, "end_of_timestep_*.pkl"))
+    output_files += glob.glob(os.path.join(output_files_dir, "??????_debug_*.pkl"))
+    output_files += glob.glob(os.path.join(output_files_dir, "avgs", "avg_hour*.pkl"))
     output_files.sort()
 
     print("")
@@ -225,7 +227,8 @@ if __name__ == "__main__":
     print(f"Found {len(output_files)} output files in {output_files_dir}")
     print("")
 
-    fileLabel = lambda file_path: file_path.split("/")[-1].split(".")[0]#[7:]
+    def fileLabel(file_path):
+        return file_path.split("/")[-1].split(".")[0]  # [7:]
 
     # Prepare arguments for each file
     tasks = []
