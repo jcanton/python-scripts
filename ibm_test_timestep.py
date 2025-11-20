@@ -1,4 +1,5 @@
 import os
+import glob
 import pickle
 import xarray as xr
 
@@ -13,7 +14,7 @@ def load_state(fname, variables):
     if fname.endswith(".nc"):
         ds = xr.open_dataset(fname)
         for variable in variables:
-            state[variable] = ds[variable].values[0,:,:].T
+            state[variable] = ds[variable].values[0, :, :].T
     elif fname.endswith(".pkl"):
         with open(fname, "rb") as ifile:
             data = pickle.load(ifile)
@@ -22,39 +23,34 @@ def load_state(fname, variables):
     return state
 
 
+fname = "000039_*.pkl"
+ref_path = "../ref_gauss3d_test"
+cur_path = "../icon-exclaim.main/build_gpu2py_verify/experiments/exclaim_gauss3d_sb/undefined_output_runxxx"
+#cur_path = "../icon-exclaim/build_gpu2py/experiments/exclaim_gauss3d_sb/undefined_output_runxxx"
+
 # ------------------------------------------------------------------------------
 # reference solution
 #
-# fname = os.path.join("data", "ibm_channel_reference_solution.pkl")
-fname = os.path.join(
-    "../icon4py/testdata/ser_icondata/mpitask1/test_channel_ibm/",
-    "end_of_timestep_000000000.pkl",
-    #"../icon-exclaim/build_cpu2py/experiments/exclaim_gauss3d_sb/",
-    #"torus_insta_DOM01_ML_0002.nc",
-    #"../icon-exclaim/build_cpu2py/experiments/exclaim_gauss3d_sb/undefined_output_runxxx/",
-    #"initial_condition_ibm_test.pkl"
-)
-ref_state = load_state(fname, variables)
-
+ref_fpath = glob.glob(os.path.join(ref_path, fname))[0]
+ref_state = load_state(ref_fpath, variables)
 
 # ------------------------------------------------------------------------------
 # current solution
 #
-fname = os.path.join(
-    #"../icon-exclaim/build_cpu2py/experiments/exclaim_gauss3d_sb/",
-    #"torus_insta_DOM01_ML_0002.nc",
-    "../icon-exclaim/build_cpu2py/experiments/exclaim_gauss3d_sb/undefined_output_runxxx/",
-    "000001_debug_after_diffu.pkl",
-    #"../icon-exclaim/build_cpu2py/experiments/exclaim_gauss3d_sb/undefined_output_runxxx/",
-    #"initial_condition_ibm.pkl"
-)
-cur_state = load_state(fname, variables)
+#fname = "000003_*.pkl"
+cur_fpath = glob.glob(os.path.join(cur_path, fname))[0]
+cur_state = load_state(cur_fpath, variables)
 
 # ------------------------------------------------------------------------------
 # compare
 #
+print(f"comparing\n{ref_fpath}\nto\n{cur_fpath}\n")
+
 for variable in variables:
-    ref_shape = ref_state[variable].shape # needed for nproma in icon-exclaim
+    ref_shape = ref_state[variable].shape  # needed for nproma in icon-exclaim
+    delta_field = abs(
+        ref_state[variable] - cur_state[variable][: ref_shape[0], : ref_shape[1]]
+    )
     print(
-        f"Variable: {variable} max abs diff: {abs(ref_state[variable] - cur_state[variable][:ref_shape[0],:ref_shape[1]]).max()}"
+        f"Variable: {variable:8s} max abs diff: {delta_field.max():.21e} at location ({delta_field.argmax() // delta_field.shape[1]}, {delta_field.argmax() % delta_field.shape[1]})"
     )

@@ -334,10 +334,11 @@ if [ "$run_postprocess" = true ]; then
 
         # compute temporal averages
         #python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS"
-        python "$SCRIPTS_DIR/temporal_average.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH" "$ICON4PY_DTIME" "$ICON4PY_PLOT_FREQUENCY"
+        #python "$SCRIPTS_DIR/temporal_average.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH" "$ICON4PY_DTIME" "$ICON4PY_PLOT_FREQUENCY"
 
         # generate vtu files
-        python "$SCRIPTS_DIR/plot_vtk.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+        #python "$SCRIPTS_DIR/plot_vtk.py" " 24 " "$OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+        python "$SCRIPTS_DIR/plot_vtk.py" " 1  " "../icon-exclaim/build_cpu2py/experiments/exclaim_gauss3d_sb/undefined_output_runxxx" "../icon4py/testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data" "../icon4py/testdata/grids/torus_50000x5000_res500/Torus_Triangles_50000m_x_5000m_res500m.nc"
     else
         echo "[WARN] No postprocessing pipeline defined for $sim_type"
     fi
