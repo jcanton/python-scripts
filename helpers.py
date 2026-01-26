@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from icon4py.model.common.grid.base import GeometryType
+from matplotlib.collections import PolyCollection
 
 
 def plot_grid(tri: mpl.tri.Triangulation, ax=None, print_indexes: bool = True, plot_masked: bool = True) -> None:
@@ -11,64 +12,12 @@ def plot_grid(tri: mpl.tri.Triangulation, ax=None, print_indexes: bool = True, p
         plt.show(block=False)
         ax = fig.subplots(nrows=1, ncols=1)
     ax.triplot(tri, color="k", linewidth=0.25)
-    ax.plot(tri.x, tri.y, "vr")
-    ax.plot(tri.edge_x, tri.edge_y, "sg")
-    ax.plot(tri.cell_x, tri.cell_y, "ob")
+    _plot_points_and_indices(ax, tri, show_points=True, print_indexes=print_indexes)
     ax.set_aspect("equal")
-    if print_indexes:
-        for i, (x, y) in enumerate(zip(tri.x*1.05, tri.y)):
-            plt.text(x, y, str(i), color="r", fontsize=10)
-        for i, (x, y) in enumerate(zip(tri.edge_x*1.05, tri.edge_y)):
-            plt.text(x, y, str(i), color="g", fontsize=10)
-        for i, (x, y) in enumerate(zip(tri.cell_x*1.05, tri.cell_y)):
-            plt.text(x, y, str(i), color="b", fontsize=10)
     
     # Plot masked (boundary) triangles with dashed lines
     if plot_masked and tri.mask is not None:
-        masked_indices = np.where(tri.mask)[0]
-        for idx in masked_indices:
-            triangle = tri.triangles[idx]
-            x_coords = tri.x[triangle]
-            y_coords = tri.y[triangle]
-            
-            # Get the triangle center to determine which side to plot on
-            center_x = tri.cell_x[idx]
-            center_y = tri.cell_y[idx]
-            
-            # Duplicate vertices and shift them to be on the same side as the center
-            x_shifted = x_coords.copy()
-            y_shifted = y_coords.copy()
-            
-            # Check if triangle wraps in x direction
-            if np.max(x_coords) - np.min(x_coords) > tri.domain_length / 2:
-                if center_x < tri.domain_length / 2:
-                    # Center is on the left, shift high x values down
-                    x_shifted = np.where(x_coords > tri.domain_length / 2, 
-                                        x_coords - tri.domain_length, 
-                                        x_coords)
-                else:
-                    # Center is on the right, shift low x values up
-                    x_shifted = np.where(x_coords < tri.domain_length / 2, 
-                                        x_coords + tri.domain_length, 
-                                        x_coords)
-            
-            # Check if triangle wraps in y direction  
-            if np.max(y_coords) - np.min(y_coords) > tri.domain_height / 2:
-                if center_y < tri.domain_height / 2:
-                    # Center is on the bottom, shift high y values down
-                    y_shifted = np.where(y_coords > tri.domain_height / 2, 
-                                        y_coords - tri.domain_height, 
-                                        y_coords)
-                else:
-                    # Center is on the top, shift low y values up
-                    y_shifted = np.where(y_coords < tri.domain_height / 2, 
-                                        y_coords + tri.domain_height, 
-                                        y_coords)
-            
-            # Close the triangle loop and plot with dashed lines
-            x_plot = np.append(x_shifted, x_shifted[0])
-            y_plot = np.append(y_shifted, y_shifted[0])
-            ax.plot(x_plot, y_plot, 'k--', linewidth=0.25, dashes=(5, 5))
+        _plot_masked_triangles(ax, tri, color="k", linewidth=0.25, linestyle="--", dashes=(5, 5))
 
     plt.draw()
 
@@ -134,6 +83,70 @@ def read_gridfile(grid_file_name: str) -> dict:
     }
 
 
+def _triangle_plot_coords(tri: mpl.tri.Triangulation, idx: int) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Return triangle coordinates shifted so wrapped cells plot on the correct side of a torus.
+    """
+    triangle = tri.triangles[idx]
+    x_coords = tri.x[triangle]
+    y_coords = tri.y[triangle]
+
+    x_shifted = x_coords.copy()
+    y_shifted = y_coords.copy()
+
+    domain_length = getattr(tri, "domain_length", None)
+    domain_height = getattr(tri, "domain_height", None)
+
+    if domain_length is not None and domain_height is not None:
+        span_x = np.max(x_coords) - np.min(x_coords)
+        span_y = np.max(y_coords) - np.min(y_coords)
+        center_x = tri.cell_x[idx]
+        center_y = tri.cell_y[idx]
+
+        if span_x > domain_length / 2:
+            if center_x < domain_length / 2:
+                x_shifted = np.where(x_coords > domain_length / 2, x_coords - domain_length, x_coords)
+            else:
+                x_shifted = np.where(x_coords < domain_length / 2, x_coords + domain_length, x_coords)
+
+        if span_y > domain_height / 2:
+            if center_y < domain_height / 2:
+                y_shifted = np.where(y_coords > domain_height / 2, y_coords - domain_height, y_coords)
+            else:
+                y_shifted = np.where(y_coords < domain_height / 2, y_coords + domain_height, y_coords)
+
+    x_plot = np.append(x_shifted, x_shifted[0])
+    y_plot = np.append(y_shifted, y_shifted[0])
+    return x_plot, y_plot
+
+
+def _plot_masked_triangles(ax, tri: mpl.tri.Triangulation, **kwargs) -> None:
+    masked_indices = np.where(tri.mask)[0]
+    for idx in masked_indices:
+        x_plot, y_plot = _triangle_plot_coords(tri, idx)
+        ax.plot(x_plot, y_plot, **kwargs)
+
+
+def _plot_points_and_indices(
+    ax,
+    tri: mpl.tri.Triangulation,
+    show_points: bool = True,
+    print_indexes: bool = False,
+) -> None:
+    if show_points:
+        ax.plot(tri.x, tri.y, "vr")
+        ax.plot(tri.edge_x, tri.edge_y, "sg")
+        ax.plot(tri.cell_x, tri.cell_y, "ob")
+
+    if print_indexes:
+        for i, (x, y) in enumerate(zip(tri.x*1.05, tri.y)):
+            ax.text(x, y, str(i), color="r", fontsize=10)
+        for i, (x, y) in enumerate(zip(tri.edge_x*1.05, tri.edge_y)):
+            ax.text(x, y, str(i), color="g", fontsize=10)
+        for i, (x, y) in enumerate(zip(tri.cell_x*1.05, tri.cell_y)):
+            ax.text(x, y, str(i), color="b", fontsize=10)
+
+
 def create_triangulation(
     vert_x: np.ndarray,
     vert_y: np.ndarray,
@@ -145,6 +158,7 @@ def create_triangulation(
     mean_cell_area: float,
     domain_length: float = None,
     domain_height: float = None,
+    geometry_type: GeometryType = GeometryType.ICOSAHEDRON,
 ) -> mpl.tri.Triangulation:
     """
     Create a triangulation from coordinate and connectivity arrays.
@@ -176,7 +190,7 @@ def create_triangulation(
     tri.mean_edge_length = np.sqrt(mean_cell_area * 2)
 
     # Set up torus-specific attributes
-    if domain_length is not None and domain_height is not None:
+    if geometry_type == GeometryType.TORUS:
         tri.domain_length = domain_length
         tri.domain_height = domain_height
         tri = mask_boundary_triangles(tri)
@@ -237,3 +251,77 @@ def mask_boundary_triangles(
         tri.edges_mask = None
 
     return tri
+
+
+def plot_partitioned_grid(
+    tri: mpl.tri.Triangulation,
+    c2rank_mapping: np.ndarray,
+    ax=None,
+    cmap: str = "tab20",
+    alpha: float = 0.45,
+    show_edges: bool = True,
+    label_ranks: bool = False,
+    show_centers: bool = False,
+    plot_masked: bool = True,
+    show_points: bool = True,
+    print_indexes: bool = False,
+) -> None:
+    """
+    Plot a partitioned grid, coloring each cell by its assigned rank.
+
+    Args:
+        tri: Triangulation with geometry and mask info.
+        c2rank_mapping: Array mapping each cell to a rank (length = n_cells).
+        ax: Matplotlib axes. If None, a new figure/axes is created.
+        cmap: Matplotlib colormap name for rank colors.
+        alpha: Face color alpha for cell fills.
+        show_edges: Whether to draw grid edges on top of fills.
+        label_ranks: Whether to label cell centers with their rank.
+        show_centers: Whether to plot cell centers as markers.
+        plot_masked: Whether to draw masked boundary triangles as dashed lines.
+        show_points: Whether to plot vertex/edge/cell markers (same as plot_grid).
+        print_indexes: Whether to print global vertex/edge/cell indices (same as plot_grid).
+    """
+
+    if c2rank_mapping.shape[0] != tri.triangles.shape[0]:
+        raise ValueError("c2rank_mapping must have one entry per cell")
+
+    if ax is None:
+        fig = plt.figure(2)
+        plt.show(block=False)
+        ax = fig.subplots(nrows=1, ncols=1)
+
+    cmap_obj = plt.get_cmap(cmap)
+    polys = []
+    facecolors = []
+
+    for idx, rank in enumerate(c2rank_mapping):
+        x_plot, y_plot = _triangle_plot_coords(tri, idx)
+        polys.append(np.column_stack([x_plot[:-1], y_plot[:-1]]))
+        facecolors.append(cmap_obj(int(rank) % cmap_obj.N))
+
+    collection = PolyCollection(
+        polys,
+        facecolors=facecolors,
+        edgecolors="none",
+        alpha=alpha,
+    )
+    ax.add_collection(collection)
+
+    if show_edges:
+        ax.triplot(tri, color="0.6", linewidth=0.25)
+
+    if plot_masked and tri.mask is not None:
+        _plot_masked_triangles(ax, tri, color="k", linewidth=0.3, linestyle="--", dashes=(5, 5))
+
+    if show_centers:
+        ax.plot(tri.cell_x, tri.cell_y, "o", markersize=2.5, color="k", alpha=0.6)
+
+    if label_ranks:
+        for idx, rank in enumerate(c2rank_mapping):
+            ax.text(tri.cell_x[idx]*1.05, tri.cell_y[idx], str(int(rank)), color="k", fontsize=10, ha="center", va="center")
+
+    _plot_points_and_indices(ax, tri, show_points=show_points, print_indexes=print_indexes)
+
+    ax.set_aspect("equal")
+    plt.draw()
