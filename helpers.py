@@ -73,20 +73,24 @@ def plot_grid(tri: mpl.tri.Triangulation, ax=None, print_indexes: bool = True, p
     plt.draw()
 
 
-def create_triangulation(
-    grid_file_name: str,
-) -> mpl.tri.Triangulation:
+def read_gridfile(grid_file_name: str) -> dict:
     """
-    Create a triangulation from a grid file.
-    Remove elongated triangles from the triangulation.
+    Read a grid file and extract coordinate and geometry information.
 
     Args:
         grid_file_name: The path to the grid file.
 
     Returns:
-        A triangulation object
+        A dictionary containing:
+        - vert_x, vert_y: Vertex coordinates
+        - edge_x, edge_y: Edge midpoint coordinates
+        - cell_x, cell_y: Cell circumcenter coordinates
+        - triangles: Cell-to-vertex connectivity array
+        - mean_cell_area: Mean cell area
+        - domain_length: Domain length (for torus grids)
+        - domain_height: Domain height (for torus grids)
+        - geometry_type: GeometryType enum (TORUS or ICOSAHEDRON)
     """
-
     grid_file = xr.open_dataset(grid_file_name)
 
     if hasattr(grid_file, "grid_geometry"):
@@ -94,49 +98,87 @@ def create_triangulation(
     else:
         geometry_type = GeometryType.ICOSAHEDRON
 
-    match geometry_type:
-        case GeometryType.TORUS:
-            # cartesian coordinates
-            vert_x = grid_file.cartesian_x_vertices.values
-            vert_y = grid_file.cartesian_y_vertices.values
-            edge_x = grid_file.edge_middle_cartesian_x.values
-            edge_y = grid_file.edge_middle_cartesian_y.values
-            cell_x = grid_file.cell_circumcenter_cartesian_x.values
-            cell_y = grid_file.cell_circumcenter_cartesian_y.values
-            # clean up the grid
-            # Adjust x values to coincide with the periodic boundary
-            DOMAIN_LENGTH = grid_file.domain_length
-            DOMAIN_HEIGHT = grid_file.domain_height
-            vert_x = np.where(np.abs(vert_x - DOMAIN_LENGTH) < 1e-9, 0, vert_x)
-            edge_x = np.where(np.abs(edge_x - DOMAIN_LENGTH) < 1e-9, 0, edge_x)
-            cell_x = np.where(np.abs(cell_x - DOMAIN_LENGTH) < 1e-9, 0, cell_x)
+    # Extract coordinates
+    vert_x = grid_file.cartesian_x_vertices.values
+    vert_y = grid_file.cartesian_y_vertices.values
+    edge_x = grid_file.edge_middle_cartesian_x.values
+    edge_y = grid_file.edge_middle_cartesian_y.values
+    cell_x = grid_file.cell_circumcenter_cartesian_x.values
+    cell_y = grid_file.cell_circumcenter_cartesian_y.values
+    triangles = grid_file.vertex_of_cell.values.T - 1
+    mean_cell_area = grid_file.cell_area.values.mean()
 
-        case GeometryType.ICOSAHEDRON:
-            # lat/lon coordinates
-            vert_x = grid_file.cartesian_x_vertices.values
-            vert_y = grid_file.cartesian_y_vertices.values
-            edge_x = grid_file.edge_middle_cartesian_x.values
-            edge_y = grid_file.edge_middle_cartesian_y.values
-            cell_x = grid_file.cell_circumcenter_cartesian_x.values
-            cell_y = grid_file.cell_circumcenter_cartesian_y.values
+    # Get domain dimensions and clean up coordinates for torus grids
+    domain_length = None
+    domain_height = None
+    if geometry_type == GeometryType.TORUS:
+        domain_length = float(grid_file.domain_length)
+        domain_height = float(grid_file.domain_height)
+        # Adjust x values to coincide with the periodic boundary
+        vert_x = np.where(np.abs(vert_x - domain_length) < 1e-9, 0, vert_x)
+        edge_x = np.where(np.abs(edge_x - domain_length) < 1e-9, 0, edge_x)
+        cell_x = np.where(np.abs(cell_x - domain_length) < 1e-9, 0, cell_x)
 
-    tri = mpl.tri.Triangulation(
-        vert_x,
-        vert_y,
-        triangles=grid_file.vertex_of_cell.values.T - 1,
-    )
+    return {
+        "vert_x": vert_x,
+        "vert_y": vert_y,
+        "edge_x": edge_x,
+        "edge_y": edge_y,
+        "cell_x": cell_x,
+        "cell_y": cell_y,
+        "triangles": triangles,
+        "mean_cell_area": mean_cell_area,
+        "domain_length": domain_length,
+        "domain_height": domain_height,
+        "geometry_type": geometry_type,
+    }
 
-    # add elements
+
+def create_triangulation(
+    vert_x: np.ndarray,
+    vert_y: np.ndarray,
+    triangles: np.ndarray,
+    edge_x: np.ndarray,
+    edge_y: np.ndarray,
+    cell_x: np.ndarray,
+    cell_y: np.ndarray,
+    mean_cell_area: float,
+    domain_length: float = None,
+    domain_height: float = None,
+) -> mpl.tri.Triangulation:
+    """
+    Create a triangulation from coordinate and connectivity arrays.
+    For torus grids, mask boundary triangles and set up wrapping information.
+
+    Args:
+        vert_x: X coordinates of vertices.
+        vert_y: Y coordinates of vertices.
+        triangles: Cell-to-vertex connectivity array (n_cells x 3).
+        edge_x: X coordinates of edge midpoints.
+        edge_y: Y coordinates of edge midpoints.
+        cell_x: X coordinates of cell circumcenters.
+        cell_y: Y coordinates of cell circumcenters.
+        mean_cell_area: Mean area of cells.
+        domain_length: Domain length for torus grids.
+        domain_height: Domain height for torus grids.
+
+    Returns:
+        A triangulation object
+    """
+    tri = mpl.tri.Triangulation(vert_x, vert_y, triangles=triangles)
+
+    # Add elements
     tri.edge_x = edge_x
     tri.edge_y = edge_y
     tri.cell_x = cell_x
     tri.cell_y = cell_y
-    tri.mean_cell_area = grid_file.cell_area.values.mean()
-    tri.mean_edge_length = np.sqrt(tri.mean_cell_area * 2)
+    tri.mean_cell_area = mean_cell_area
+    tri.mean_edge_length = np.sqrt(mean_cell_area * 2)
 
-    if geometry_type == GeometryType.TORUS:
-        tri.domain_length = DOMAIN_LENGTH
-        tri.domain_height = DOMAIN_HEIGHT
+    # Set up torus-specific attributes
+    if domain_length is not None and domain_height is not None:
+        tri.domain_length = domain_length
+        tri.domain_height = domain_height
         tri = mask_boundary_triangles(tri)
     else:
         tri.domain_length = None
