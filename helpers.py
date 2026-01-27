@@ -11,13 +11,13 @@ def plot_grid(tri: mpl.tri.Triangulation, ax=None, print_indexes: bool = True, p
         fig = plt.figure(1)
         plt.show(block=False)
         ax = fig.subplots(nrows=1, ncols=1)
-    ax.triplot(tri, color="k", linewidth=0.25)
+    ax.triplot(tri, color="k", linewidth=0.8)
     _plot_points_and_indices(ax, tri, show_points=True, print_indexes=print_indexes)
     ax.set_aspect("equal")
     
     # Plot masked (boundary) triangles with dashed lines
     if plot_masked and tri.mask is not None:
-        _plot_masked_triangles(ax, tri, color="k", linewidth=0.25, linestyle="--", dashes=(5, 5))
+        _plot_masked_triangles(ax, tri)
 
     plt.draw()
 
@@ -124,7 +124,7 @@ def _plot_masked_triangles(ax, tri: mpl.tri.Triangulation, **kwargs) -> None:
     masked_indices = np.where(tri.mask)[0]
     for idx in masked_indices:
         x_plot, y_plot = _triangle_plot_coords(tri, idx)
-        ax.plot(x_plot, y_plot, **kwargs)
+        ax.plot(x_plot, y_plot, color="k", linewidth=0.5, linestyle="--", dashes=(5, 5), **kwargs)
 
 
 def _plot_points_and_indices(
@@ -309,10 +309,10 @@ def plot_partitioned_grid(
     ax.add_collection(collection)
 
     if show_edges:
-        ax.triplot(tri, color="0.6", linewidth=0.25)
+        ax.triplot(tri, color="k", linewidth=0.8)
 
     if plot_masked and tri.mask is not None:
-        _plot_masked_triangles(ax, tri, color="k", linewidth=0.3, linestyle="--", dashes=(5, 5))
+        _plot_masked_triangles(ax, tri)
 
     if show_centers:
         ax.plot(tri.cell_x, tri.cell_y, "o", markersize=2.5, color="k", alpha=0.6)
@@ -325,3 +325,89 @@ def plot_partitioned_grid(
 
     ax.set_aspect("equal")
     plt.draw()
+
+
+def plot_subdomains(
+    tri: mpl.tri.Triangulation,
+    subdomains: list,
+    cols: int = 2,
+    owned_cmap: str = "tab10",
+    halo_cmap: str = "OrRd",
+    alpha: float = 0.55,
+    show_edges: bool = True,
+    show_masked: bool = True,
+    show_points: bool = False,
+    print_indexes: bool = False,
+) -> None:
+    """
+    Plot each subdomain (owned + halo levels) in its own subplot.
+
+    Args:
+        tri: Triangulation with geometry and mask info.
+        subdomains: List of dicts with keys: rank, owned_cells, halo_levels, all_cells.
+        cols: Number of subplot columns.
+        owned_cmap: Colormap name for owned cells (indexed by rank).
+        halo_cmap: Colormap name for halo levels (progressively darker).
+        alpha: Face alpha for fills.
+        show_edges: Whether to draw full-grid edges.
+        show_masked: Whether to draw masked boundary triangles dashed.
+        show_points: Whether to plot vertex/edge/cell markers.
+        print_indexes: Whether to print global vertex/edge/cell indices.
+    """
+
+    n = len(subdomains)
+    rows = int(np.ceil(n / cols))
+    fig, axes = plt.subplots(rows, cols, figsize=(6 * cols, 5 * rows))
+    axes = np.atleast_1d(axes).ravel()
+
+    owned_cm = plt.get_cmap(owned_cmap)
+    halo_cm = plt.get_cmap(halo_cmap)
+
+    # Same owned color for every subdomain; consistent halo colors by level across ranks
+    owned_color = owned_cm(0)
+    max_levels = max(len(sd.get("halo_levels", [])) for sd in subdomains)
+    halo_levels_colors = [halo_cm((i + 1) / (max_levels + 1 or 1)) for i in range(max_levels)]
+
+    for ax, sd in zip(axes, subdomains):
+        polys = []
+        facecolors = []
+
+        for cell in sd["owned_cells"]:
+            x_plot, y_plot = _triangle_plot_coords(tri, cell)
+            polys.append(np.column_stack([x_plot[:-1], y_plot[:-1]]))
+            facecolors.append(owned_color)
+
+        for lvl, cells in enumerate(sd.get("halo_levels", [])):
+            halo_color = halo_levels_colors[lvl % len(halo_levels_colors)] if halo_levels_colors else (0.7, 0.7, 0.7, 1)
+            for cell in cells:
+                x_plot, y_plot = _triangle_plot_coords(tri, cell)
+                polys.append(np.column_stack([x_plot[:-1], y_plot[:-1]]))
+                facecolors.append(halo_color)
+
+        if polys:
+            collection = PolyCollection(
+                polys,
+                facecolors=facecolors,
+                edgecolors="none",
+                alpha=alpha,
+            )
+            ax.add_collection(collection)
+
+        if show_edges:
+            ax.triplot(tri, color="k", linewidth=0.8)
+
+        if show_masked and tri.mask is not None:
+            _plot_masked_triangles(ax, tri)
+
+        _plot_points_and_indices(ax, tri, show_points=show_points, print_indexes=print_indexes)
+
+        ax.set_title(f"Rank {sd['rank']}")
+        ax.set_aspect("equal")
+
+    # Hide any unused axes
+    for ax in axes[n:]:
+        ax.axis('off')
+
+    plt.tight_layout()
+    plt.draw()
+    plt.show(block=False)
