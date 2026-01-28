@@ -10,6 +10,7 @@ import subprocess
 import tarfile
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
@@ -171,7 +172,8 @@ def wait_for_success(job_id: str) -> None:
 
 
 def copy_ser_data(exp: Experiment, ranks: int) -> Path:
-	src = EXPERIMENTS_DIR / exp.name / "ser_data"
+	exp_dir = EXPERIMENTS_DIR / exp.name
+	src = exp_dir / "ser_data"
 	if not src.exists():
 		raise FileNotFoundError(f"Missing ser_data folder: {src}")
 
@@ -182,11 +184,25 @@ def copy_ser_data(exp: Experiment, ranks: int) -> Path:
 		shutil.rmtree(dest_dir)
 
 	shutil.copytree(src, dest_dir)
+	
+	# Copy NAMELIST files
+	namelist_files = [
+		f"NAMELIST_{exp.name}",
+		"NAMELIST_ICON_output_atm",
+	]
+	for namelist_file in namelist_files:
+		src_file = exp_dir / namelist_file
+		if not src_file.exists():
+			raise FileNotFoundError(f"Missing namelist file: {src_file}")
+		shutil.copy2(src_file, dest_dir / namelist_file)
+	
 	return dest_dir
 
 
-def tar_output_folder(folder: Path, tar_name: str) -> Path:
-	tar_path = folder.parent / f"{tar_name}.tar.gz"
+def tar_folder(folder: Path, tar_name: str) -> Path:
+	date_str = datetime.now().strftime("%Y%m%d")
+	tar_filename = f"{tar_name}.{date_str}.tar.gz"
+	tar_path = folder.parent / tar_filename
 	if tar_path.exists():
 		tar_path.unlink()
 
@@ -210,8 +226,8 @@ def run_experiment_series() -> None:
 			job_id = submit_job(script_path)
 			wait_for_success(job_id)
 
-			copied = copy_ser_data(exp, ranks)
-			tar_output_folder(copied, exp.tar_name)
+			dest_dir = copy_ser_data(exp, ranks)
+			tar_folder(dest_dir, exp.tar_name)
 
 
 if __name__ == "__main__":
