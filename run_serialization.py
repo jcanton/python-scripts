@@ -26,6 +26,7 @@ class Experiment:
 	name: str
 	output_dir_name: str
 	tar_name: str
+	extra_ranks: int = 0
 
 
 # There is no consistency in the following names, so be careful when editing..
@@ -36,6 +37,7 @@ EXPERIMENTS: List[Experiment] = [
 		name="exclaim_ch_r04b09_dsl_sb",
 		output_dir_name="mch_ch_r04b09_dsl",
 		tar_name="mch_ch_r04b09_dsl",
+		extra_ranks=1,
 	),
 	Experiment(
 		name="exclaim_nh35_tri_jws_sb",
@@ -133,8 +135,15 @@ def update_slurm_variables(script_path: Path) -> None:
 	script_path.write_text(updated)
 
 
-def update_slurm_ranks(script_path: Path, ranks: int) -> None:
-	"""Update ranks in the Slurm script (ntasks-per-node and mpi_procs_pernode)."""
+def update_slurm_ranks(script_path: Path, ranks: int, extra_ranks: int = 0) -> None:
+	"""Update ranks in the Slurm script (ntasks-per-node and mpi_procs_pernode).
+	
+	Args:
+		script_path: Path to the Slurm script
+		ranks: Base number of MPI ranks
+		extra_ranks: Additional ranks reserved for special operations (e.g., pre-fetch)
+	"""
+	total_ranks = ranks + extra_ranks
 	original = script_path.read_text()
 
 	updated = original
@@ -142,7 +151,7 @@ def update_slurm_ranks(script_path: Path, ranks: int) -> None:
 	# Update #SBATCH --ntasks-per-node=X
 	updated = re.sub(
 		r"^#SBATCH\s+--ntasks-per-node\s*=\s*\d+\s*$",
-		f"#SBATCH --ntasks-per-node={ranks}",
+		f"#SBATCH --ntasks-per-node={total_ranks}",
 		updated,
 		flags=re.MULTILINE,
 	)
@@ -150,7 +159,7 @@ def update_slurm_ranks(script_path: Path, ranks: int) -> None:
 	# Update : ${no_of_nodes:=1} ${mpi_procs_pernode:=X}
 	updated = re.sub(
 		r"^:\s+\$\{no_of_nodes:=\d+\}\s+\$\{mpi_procs_pernode:=\d+\}\s*$",
-		f": ${{no_of_nodes:=1}} ${{mpi_procs_pernode:={ranks}}}",
+		f": ${{no_of_nodes:=1}} ${{mpi_procs_pernode:={total_ranks}}}",
 		updated,
 		flags=re.MULTILINE,
 	)
@@ -266,9 +275,9 @@ def run_single_experiment(exp: Experiment, ranks: int) -> None:
 		if not script_path.exists():
 			raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
-		log_status(f"Setting up {exp.name} with {ranks} ranks")
+		log_status(f"Setting up {exp.name} with {ranks} ranks" + (f" + {exp.extra_ranks} extra" if exp.extra_ranks > 0 else ""))
 		update_slurm_variables(script_path)
-		update_slurm_ranks(script_path, ranks)
+		update_slurm_ranks(script_path, ranks, exp.extra_ranks)
 		
 		log_status(f"Submitting {exp.name} with {ranks} ranks")
 		job_id = submit_job(script_path)
