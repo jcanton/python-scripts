@@ -239,7 +239,8 @@ def copy_ser_data(exp: Experiment, ranks: int) -> Path:
 	if dest_dir.exists():
 		shutil.rmtree(dest_dir)
 
-	shutil.copytree(src, dest_dir)
+	dest_dir.mkdir(parents=True, exist_ok=True)
+	shutil.copytree(src, dest_dir / "ser_data")
 	
 	# Copy NAMELIST files
 	namelist_files = [
