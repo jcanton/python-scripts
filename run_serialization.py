@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tarfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +19,7 @@ from typing import List, Optional
 # USER CONFIGURATION
 # ======================================
 MPI_RANKS: List[int] = [1, 2, 4]
+MAX_THREADS: int = 4
 
 @dataclass(frozen=True)
 class Experiment:
@@ -85,6 +87,12 @@ OUTPUT_ROOT = EXPERIMENTS_DIR / "serialized_runs"
 
 def run_command(cmd: List[str], check: bool = True) -> subprocess.CompletedProcess:
 	return subprocess.run(cmd, check=check, text=True, capture_output=True)
+
+
+def log_status(message: str) -> None:
+	"""Log a status message with timestamp."""
+	timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+	print(f"[{timestamp}] {message}")
 
 
 def update_slurm_variables(script_path: Path) -> None:
@@ -251,23 +259,62 @@ def tar_folder(folder: Path, tar_name: str) -> Path:
 	return tar_path
 
 
+def run_single_experiment(exp: Experiment, ranks: int) -> None:
+	"""Execute a single experiment with the given rank configuration."""
+	try:
+		script_path = RUNSCRIPTS_DIR / f"exp.{exp.name}.run"
+		if not script_path.exists():
+			raise FileNotFoundError(f"Missing slurm script: {script_path}")
+
+		log_status(f"Setting up {exp.name} with {ranks} ranks")
+		update_slurm_variables(script_path)
+		update_slurm_ranks(script_path, ranks)
+		
+		log_status(f"Submitting {exp.name} with {ranks} ranks")
+		job_id = submit_job(script_path)
+		
+		log_status(f"Waiting for {exp.name} (ranks={ranks}, job_id={job_id})")
+		wait_for_success(job_id)
+		
+		log_status(f"Copying ser_data for {exp.name} with {ranks} ranks")
+		dest_dir = copy_ser_data(exp, ranks)
+		
+		log_status(f"Creating tar archive for {exp.name} with {ranks} ranks")
+		tar_folder(dest_dir, exp.tar_name)
+		
+		log_status(f"Completed {exp.name} with {ranks} ranks")
+	except Exception as e:
+		log_status(f"ERROR in {exp.name} with {ranks} ranks: {e}")
+		raise
+
+
 def run_experiment_series() -> None:
 	OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 	os.chdir(RUNSCRIPTS_DIR)
-
-	for ranks in MPI_RANKS:
-		for exp in EXPERIMENTS:
-			script_path = RUNSCRIPTS_DIR / f"exp.{exp.name}.run"
-			if not script_path.exists():
-				raise FileNotFoundError(f"Missing slurm script: {script_path}")
-
-			update_slurm_variables(script_path)
-			update_slurm_ranks(script_path, ranks)
-			job_id = submit_job(script_path)
-			wait_for_success(job_id)
-
-			dest_dir = copy_ser_data(exp, ranks)
-			tar_folder(dest_dir, exp.tar_name)
+	
+	total_tasks = len(EXPERIMENTS) * len(MPI_RANKS)
+	log_status(f"Starting experiment series with {total_tasks} tasks ({len(EXPERIMENTS)} experiments × {len(MPI_RANKS)} rank configs)")
+	
+	for rank_idx, ranks in enumerate(MPI_RANKS, 1):
+		num_exps = len(EXPERIMENTS)
+		log_status(f"Starting rank config {rank_idx}/{len(MPI_RANKS)}: {ranks} ranks ({num_exps} experiments parallel)")
+		
+		with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+			futures = []
+			
+			for exp in EXPERIMENTS:
+				future = executor.submit(run_single_experiment, exp, ranks)
+				futures.append(future)
+			
+			log_status(f"All {len(futures)} experiments queued for {ranks} ranks, waiting for completion...")
+			
+			# Wait for all futures to complete and collect exceptions
+			for future in futures:
+				future.result()  # Re-raises any exceptions from the thread
+		
+		log_status(f"Completed rank config {rank_idx}/{len(MPI_RANKS)}: {ranks} ranks")
+	
+	log_status(f"All {total_tasks} tasks completed successfully!")
 
 
 if __name__ == "__main__":
