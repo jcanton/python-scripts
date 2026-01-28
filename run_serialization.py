@@ -71,6 +71,8 @@ EXPERIMENTS_DIR = BUILD_DIR / "experiments"
 SBATCH_PARTITION = "debug"
 SBATCH_TIME = "00:15:00"
 SBATCH_ACCOUNT = "cwd01"
+SBATCH_UENV = "icon/25.2:v3"
+SBATCH_UENV_VIEW = "default"
 SBATCH_EXTRA_ARGS: List[str] = [f"--partition={SBATCH_PARTITION}", f"--time={SBATCH_TIME}", f"--account={SBATCH_ACCOUNT}"]
 POLL_SECONDS = 10
 
@@ -84,6 +86,44 @@ OUTPUT_ROOT = EXPERIMENTS_DIR / "serialized_runs"
 
 def run_command(cmd: List[str], check: bool = True) -> subprocess.CompletedProcess:
 	return subprocess.run(cmd, check=check, text=True, capture_output=True)
+
+
+def update_slurm_variables(script_path: Path) -> None:
+	"""Update SBATCH directives in the Slurm script (partition, account, time, uenv, view)."""
+	original = script_path.read_text()
+	updated = original
+	
+	# Find the position after #SBATCH --job-name= line
+	job_name_match = re.search(r"^#SBATCH\s+--job-name=.*$", updated, flags=re.MULTILINE)
+	if not job_name_match:
+		raise RuntimeError("Could not find #SBATCH --job-name= line in script")
+	
+	# Prepare the new SBATCH lines to insert
+	new_lines = (
+		f"#SBATCH --partition={SBATCH_PARTITION}\n"
+		f"#SBATCH --account={SBATCH_ACCOUNT}\n"
+		f"#SBATCH --time={SBATCH_TIME}\n"
+		f"#SBATCH --uenv='{SBATCH_UENV}'\n"
+		f"#SBATCH --view='{SBATCH_UENV_VIEW}'"
+	)
+	
+	# Remove existing partition, account, time, uenv, and view lines if they exist
+	updated = re.sub(r"^#SBATCH\s+--partition=.*$\n?", "", updated, flags=re.MULTILINE)
+	updated = re.sub(r"^#SBATCH\s+--account=.*$\n?", "", updated, flags=re.MULTILINE)
+	updated = re.sub(r"^#SBATCH\s+--time=.*$\n?", "", updated, flags=re.MULTILINE)
+	updated = re.sub(r"^#SBATCH\s+--uenv=.*$\n?", "", updated, flags=re.MULTILINE)
+	updated = re.sub(r"^#SBATCH\s+--view=.*$\n?", "", updated, flags=re.MULTILINE)
+	
+	# Re-find job-name position in the cleaned text
+	job_name_match = re.search(r"^(#SBATCH\s+--job-name=.*$)", updated, flags=re.MULTILINE)
+	if not job_name_match:
+		raise RuntimeError("Could not find #SBATCH --job-name= line in script")
+	
+	# Insert new lines after the job-name line
+	insertion_point = job_name_match.end()
+	updated = updated[:insertion_point] + "\n" + new_lines + updated[insertion_point:]
+	
+	script_path.write_text(updated)
 
 
 def update_slurm_ranks(script_path: Path, ranks: int) -> None:
@@ -112,7 +152,7 @@ def update_slurm_ranks(script_path: Path, ranks: int) -> None:
 
 
 def submit_job(script_path: Path) -> str:
-	cmd = ["sbatch", *SBATCH_EXTRA_ARGS, str(script_path)]
+	cmd = ["sbatch", str(script_path)]
 	result = run_command(cmd)
 	match = re.search(r"Submitted batch job\s+(\d+)", result.stdout)
 	if not match:
@@ -222,6 +262,7 @@ def run_experiment_series() -> None:
 			if not script_path.exists():
 				raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
+			update_slurm_variables(script_path)
 			update_slurm_ranks(script_path, ranks)
 			job_id = submit_job(script_path)
 			wait_for_success(job_id)
