@@ -73,7 +73,6 @@ SBATCH_TIME = "00:15:00"
 SBATCH_ACCOUNT = "cwd01"
 SBATCH_UENV = "icon/25.2:v3"
 SBATCH_UENV_VIEW = "default"
-SBATCH_EXTRA_ARGS: List[str] = [f"--partition={SBATCH_PARTITION}", f"--time={SBATCH_TIME}", f"--account={SBATCH_ACCOUNT}"]
 POLL_SECONDS = 10
 
 # Output location for copied ser_data and tarballs
