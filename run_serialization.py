@@ -229,18 +229,18 @@ def wait_for_success(job_id: str) -> None:
 
 def copy_ser_data(exp: Experiment, ranks: int) -> Path:
 	exp_dir = EXPERIMENTS_DIR / exp.name
-	src = exp_dir / "ser_data"
-	if not src.exists():
-		raise FileNotFoundError(f"Missing ser_data folder: {src}")
+	src_dir = exp_dir / "ser_data"
+	if not src_dir.exists():
+		raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
-	dest_dir = OUTPUT_ROOT / f"mpirank{ranks}" / exp.output_dir_name
+	dest_dir = OUTPUT_ROOT / f"mpirank{ranks}" / exp.output_dir_name / "ser_data"
 	dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
 	if dest_dir.exists():
 		shutil.rmtree(dest_dir)
 
 	dest_dir.mkdir(parents=True, exist_ok=True)
-	shutil.copytree(src, dest_dir / "ser_data")
+	shutil.copytree(src_dir, dest_dir)
 	
 	# Copy NAMELIST files
 	namelist_files = [
