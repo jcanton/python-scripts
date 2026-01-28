@@ -19,7 +19,7 @@ from typing import List, Optional
 # USER CONFIGURATION
 # ======================================
 MPI_RANKS: List[int] = [1, 2, 4]
-MAX_THREADS: int = 4
+MAX_THREADS: int = 5
 
 @dataclass(frozen=True)
 class Experiment:
@@ -38,7 +38,7 @@ EXPERIMENTS: List[Experiment] = [
 		tar_name="mch_ch_r04b09_dsl",
 	),
 	Experiment(
-		name="exclaim_nh53_tri_jws_sb",
+		name="exclaim_nh35_tri_jws_sb",
 		output_dir_name="jabw_R02B04",
 		tar_name="jabw_R02B04",
 	),
