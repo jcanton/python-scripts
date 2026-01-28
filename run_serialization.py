@@ -233,14 +233,14 @@ def copy_ser_data(exp: Experiment, ranks: int) -> Path:
 	if not src_dir.exists():
 		raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
-	dest_dir = OUTPUT_ROOT / f"mpirank{ranks}" / exp.output_dir_name / "ser_data"
+	dest_dir = OUTPUT_ROOT / f"mpirank{ranks}" / exp.output_dir_name
 	dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
 	if dest_dir.exists():
 		shutil.rmtree(dest_dir)
 
 	dest_dir.mkdir(parents=True, exist_ok=True)
-	shutil.copytree(src_dir, dest_dir)
+	shutil.copytree(src_dir, dest_dir / "ser_data")
 	
 	# Copy NAMELIST files
 	namelist_files = [
