@@ -29,32 +29,34 @@ class Experiment:
 	extra_ranks: int = 0
 
 	@property
-	def output_dir_name(self) -> str:
-		if self.name.endswith("_sb"):
-			return self.name[:-3]
-		return self.name
+	def sb_name(self) -> str:
+		return f"{self.name}_sb"
+
+	@property
+	def script_name(self) -> str:
+		return f"exp.{self.sb_name}.run"
 
 	@property
 	def tar_filename(self) -> str:
-		return f"{self.output_dir_name}.{TAR_DATE_STR}.tar.gz"
+		return f"{self.name}.{TAR_DATE_STR}.tar.gz"
 
 
 EXPERIMENTS: List[Experiment] = [
 	Experiment(
-		name="exclaim_ch_r04b09_dsl_sb",
+		name="exclaim_ch_r04b09_dsl",
 		extra_ranks=1,
 	),
 	Experiment(
-		name="exclaim_nh35_tri_jws_sb",
+		name="exclaim_nh35_tri_jws",
 	),
 	Experiment(
-		name="exclaim_ape_R02B04_sb",
+		name="exclaim_ape_R02B04",
 	),
 	Experiment(
-		name="exclaim_gauss3d_sb",
+		name="exclaim_gauss3d",
 	),
 	Experiment(
-		name="exclaim_nh_weisman_klemp_sb",
+		name="exclaim_nh_weisman_klemp",
 	),
 ]
 
@@ -225,12 +227,12 @@ def wait_for_success(job_id: str) -> None:
 
 
 def copy_ser_data(exp: Experiment, ranks: int) -> Path:
-	exp_dir = EXPERIMENTS_DIR / exp.name
+	exp_dir = EXPERIMENTS_DIR / exp.sb_name
 	src_dir = exp_dir / "ser_data"
 	if not src_dir.exists():
 		raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
-	dest_dir = OUTPUT_ROOT / f"mpirank{ranks}" / exp.output_dir_name
+	dest_dir = OUTPUT_ROOT / f"mpirank{ranks}" / exp.name
 	dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
 	if dest_dir.exists():
@@ -262,7 +264,7 @@ def tar_folder(folder: Path, exp: Experiment) -> Path:
 def run_single_experiment(exp: Experiment, ranks: int) -> None:
 	"""Execute a single experiment with the given rank configuration."""
 	try:
-		script_path = RUNSCRIPTS_DIR / f"exp.{exp.name}.run"
+		script_path = RUNSCRIPTS_DIR / exp.script_name
 		if not script_path.exists():
 			raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
