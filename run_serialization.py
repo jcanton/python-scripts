@@ -26,25 +26,25 @@ MAX_THREADS: int = 5
 @dataclass(frozen=True)
 class Experiment:
 	name: str
-	extra_ranks: int = 0
+	reserved_ranks: int = 0
 
 	@property
-	def sb_name(self) -> str:
+	def slurm_name(self) -> str:
 		return f"{self.name}_sb"
 
 	@property
 	def script_name(self) -> str:
-		return f"exp.{self.sb_name}.run"
+		return f"exp.{self.slurm_name}.run"
 
 	@property
-	def tar_filename(self) -> str:
+	def archive_filename(self) -> str:
 		return f"{self.name}.{TAR_DATE_STR}.tar.gz"
 
 
 EXPERIMENTS: List[Experiment] = [
 	Experiment(
 		name="exclaim_ch_r04b09_dsl",
-		extra_ranks=1,
+		reserved_ranks=1,
 	),
 	Experiment(
 		name="exclaim_nh35_tri_jws",
@@ -66,7 +66,7 @@ SBATCH_TIME = "00:15:00"
 SBATCH_ACCOUNT = "cwd01"
 SBATCH_UENV = "icon/25.2:v3"
 SBATCH_UENV_VIEW = "default"
-POLL_SECONDS = 10
+JOB_POLL_SECONDS = 10
 
 # Base directories (adjust if needed)
 PROJECTS_DIR = Path(os.environ.get("SCRATCH", str(Path.home() / "projects")))
@@ -134,15 +134,15 @@ def update_slurm_variables(script_path: Path) -> None:
 	script_path.write_text(updated)
 
 
-def update_slurm_ranks(script_path: Path, ranks: int, extra_ranks: int = 0) -> None:
+def update_slurm_ranks(script_path: Path, mpi_ranks: int, reserved_ranks: int = 0) -> None:
 	"""Update ranks in the Slurm script (ntasks-per-node and mpi_procs_pernode).
 	
 	Args:
 		script_path: Path to the Slurm script
-		ranks: Base number of MPI ranks
-		extra_ranks: Additional ranks reserved for special operations (e.g., pre-fetch)
+		mpi_ranks: Base number of MPI ranks
+		reserved_ranks: Additional ranks reserved for special operations (e.g., pre-fetch)
 	"""
-	total_ranks = ranks + extra_ranks
+	total_ranks = mpi_ranks + reserved_ranks
 	original = script_path.read_text()
 
 	updated = original
@@ -215,7 +215,7 @@ def wait_for_success(job_id: str) -> None:
 	while True:
 		state = get_job_state(job_id)
 		if state is None:
-			time.sleep(POLL_SECONDS)
+			time.sleep(JOB_POLL_SECONDS)
 			continue
 
 		if state in terminal_states:
@@ -223,16 +223,16 @@ def wait_for_success(job_id: str) -> None:
 				return
 			raise RuntimeError(f"Job {job_id} finished unsuccessfully with state: {state}")
 
-		time.sleep(POLL_SECONDS)
+		time.sleep(JOB_POLL_SECONDS)
 
 
-def copy_ser_data(exp: Experiment, ranks: int) -> Path:
-	exp_dir = EXPERIMENTS_DIR / exp.sb_name
+def copy_ser_data(exp: Experiment, mpi_ranks: int) -> Path:
+	exp_dir = EXPERIMENTS_DIR / exp.slurm_name
 	src_dir = exp_dir / "ser_data"
 	if not src_dir.exists():
 		raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
-	dest_dir = OUTPUT_ROOT / f"mpirank{ranks}" / exp.name
+	dest_dir = OUTPUT_ROOT / f"mpirank{mpi_ranks}" / exp.name
 	dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
 	if dest_dir.exists():
@@ -251,7 +251,7 @@ def copy_ser_data(exp: Experiment, ranks: int) -> Path:
 
 
 def tar_folder(folder: Path, exp: Experiment) -> Path:
-	tar_path = folder.parent / exp.tar_filename
+	tar_path = folder.parent / exp.archive_filename
 	if tar_path.exists():
 		tar_path.unlink()
 
@@ -261,32 +261,35 @@ def tar_folder(folder: Path, exp: Experiment) -> Path:
 	return tar_path
 
 
-def run_single_experiment(exp: Experiment, ranks: int) -> None:
+def run_experiment(exp: Experiment, mpi_ranks: int) -> None:
 	"""Execute a single experiment with the given rank configuration."""
 	try:
 		script_path = RUNSCRIPTS_DIR / exp.script_name
 		if not script_path.exists():
 			raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
-		log_status(f"Setting up {exp.name} with {ranks} ranks" + (f" + {exp.extra_ranks} extra" if exp.extra_ranks > 0 else ""))
+		log_status(
+			f"Setting up {exp.name} with {mpi_ranks} ranks"
+			+ (f" + {exp.reserved_ranks} reserved" if exp.reserved_ranks > 0 else "")
+		)
 		update_slurm_variables(script_path)
-		update_slurm_ranks(script_path, ranks, exp.extra_ranks)
+		update_slurm_ranks(script_path, mpi_ranks, exp.reserved_ranks)
 		
-		log_status(f"Submitting {exp.name} with {ranks} ranks")
+		log_status(f"Submitting {exp.name} with {mpi_ranks} ranks")
 		job_id = submit_job(script_path)
 		
-		log_status(f"Waiting for {exp.name} (ranks={ranks}, job_id={job_id})")
+		log_status(f"Waiting for {exp.name} (ranks={mpi_ranks}, job_id={job_id})")
 		wait_for_success(job_id)
 		
-		log_status(f"Copying ser_data for {exp.name} with {ranks} ranks")
-		dest_dir = copy_ser_data(exp, ranks)
+		log_status(f"Copying ser_data for {exp.name} with {mpi_ranks} ranks")
+		dest_dir = copy_ser_data(exp, mpi_ranks)
 		
-		log_status(f"Creating tar archive for {exp.name} with {ranks} ranks")
+		log_status(f"Creating tar archive for {exp.name} with {mpi_ranks} ranks")
 		tar_folder(dest_dir, exp)
 		
-		log_status(f"Completed {exp.name} with {ranks} ranks")
+		log_status(f"Completed {exp.name} with {mpi_ranks} ranks")
 	except Exception as e:
-		log_status(f"ERROR in {exp.name} with {ranks} ranks: {e}")
+		log_status(f"ERROR in {exp.name} with {mpi_ranks} ranks: {e}")
 		raise
 
 
@@ -297,24 +300,26 @@ def run_experiment_series() -> None:
 	total_tasks = len(EXPERIMENTS) * len(MPI_RANKS)
 	log_status(f"Starting experiment series with {total_tasks} tasks ({len(EXPERIMENTS)} experiments × {len(MPI_RANKS)} rank configs)")
 	
-	for rank_idx, ranks in enumerate(MPI_RANKS, 1):
+	for rank_idx, mpi_ranks in enumerate(MPI_RANKS, 1):
 		num_exps = len(EXPERIMENTS)
-		log_status(f"Starting rank config {rank_idx}/{len(MPI_RANKS)}: {ranks} ranks ({num_exps} experiments parallel)")
+		log_status(
+			f"Starting rank config {rank_idx}/{len(MPI_RANKS)}: {mpi_ranks} ranks ({num_exps} experiments parallel)"
+		)
 		
 		with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
 			futures = []
 			
 			for exp in EXPERIMENTS:
-				future = executor.submit(run_single_experiment, exp, ranks)
+				future = executor.submit(run_experiment, exp, mpi_ranks)
 				futures.append(future)
 			
-			log_status(f"All {len(futures)} experiments queued for {ranks} ranks, waiting for completion...")
+			log_status(f"All {len(futures)} experiments queued for {mpi_ranks} ranks, waiting for completion...")
 			
 			# Wait for all futures to complete and collect exceptions
 			for future in futures:
 				future.result()  # Re-raises any exceptions from the thread
 		
-		log_status(f"Completed rank config {rank_idx}/{len(MPI_RANKS)}: {ranks} ranks")
+		log_status(f"Completed rank config {rank_idx}/{len(MPI_RANKS)}: {mpi_ranks} ranks")
 	
 	log_status(f"All {total_tasks} tasks completed successfully!")
 
