@@ -61,6 +61,14 @@ EXPERIMENTS: List[Experiment] = [
 	),
 ]
 
+# Slurm settings
+SBATCH_PARTITION = "debug"
+SBATCH_TIME = "00:15:00"
+SBATCH_ACCOUNT = "cwd01"
+SBATCH_UENV = "icon/25.2:v3"
+SBATCH_UENV_VIEW = "default"
+POLL_SECONDS = 10
+
 # Base directories (adjust if needed)
 PROJECTS_DIR = Path(os.environ.get("SCRATCH", str(Path.home() / "projects")))
 ICONF90_DIR = PROJECTS_DIR / "icon-exclaim.serialize"
@@ -70,14 +78,6 @@ ICONF90_BUILD_FOLDER = "build_serialize"
 BUILD_DIR = ICONF90_DIR / ICONF90_BUILD_FOLDER
 RUNSCRIPTS_DIR = BUILD_DIR / "run"
 EXPERIMENTS_DIR = BUILD_DIR / "experiments"
-
-# Slurm settings
-SBATCH_PARTITION = "debug"
-SBATCH_TIME = "00:15:00"
-SBATCH_ACCOUNT = "cwd01"
-SBATCH_UENV = "icon/25.2:v3"
-SBATCH_UENV_VIEW = "default"
-POLL_SECONDS = 10
 
 # Output location for copied ser_data and tarballs
 OUTPUT_ROOT = EXPERIMENTS_DIR / "serialized_runs"
