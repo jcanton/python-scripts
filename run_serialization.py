@@ -15,6 +15,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
+TAR_DATE_STR = datetime.now().strftime("%Y%m%d")
+
 # ======================================
 # USER CONFIGURATION
 # ======================================
@@ -24,40 +26,35 @@ MAX_THREADS: int = 5
 @dataclass(frozen=True)
 class Experiment:
 	name: str
-	output_dir_name: str
-	tar_name: str
 	extra_ranks: int = 0
 
+	@property
+	def output_dir_name(self) -> str:
+		if self.name.endswith("_sb"):
+			return self.name[:-3]
+		return self.name
 
-# There is no consistency in the following names, so be careful when editing..
-# The issue is that icon4py has hardcoded experiment names/folders in various
-# places, and funny things such as '_torus' identifying the grid type..
+	@property
+	def tar_filename(self) -> str:
+		return f"{self.output_dir_name}.{TAR_DATE_STR}.tar.gz"
+
+
 EXPERIMENTS: List[Experiment] = [
 	Experiment(
 		name="exclaim_ch_r04b09_dsl_sb",
-		output_dir_name="mch_ch_r04b09_dsl",
-		tar_name="mch_ch_r04b09_dsl",
 		extra_ranks=1,
 	),
 	Experiment(
 		name="exclaim_nh35_tri_jws_sb",
-		output_dir_name="jabw_R02B04",
-		tar_name="jabw_R02B04",
 	),
 	Experiment(
 		name="exclaim_ape_R02B04_sb",
-		output_dir_name="exclaim_ape_R02B04",
-		tar_name="exclaim_ape_R02B04",
 	),
 	Experiment(
 		name="exclaim_gauss3d_sb",
-		output_dir_name="gauss3d_torus",
-		tar_name="gauss_3d",
 	),
 	Experiment(
 		name="exclaim_nh_weisman_klemp_sb",
-		output_dir_name="weisman_klemp_torus",
-		tar_name="weisman_klemp_torus",
 	),
 ]
 
@@ -251,10 +248,8 @@ def copy_ser_data(exp: Experiment, ranks: int) -> Path:
 	return dest_dir
 
 
-def tar_folder(folder: Path, tar_name: str) -> Path:
-	date_str = datetime.now().strftime("%Y%m%d")
-	tar_filename = f"{tar_name}.{date_str}.tar.gz"
-	tar_path = folder.parent / tar_filename
+def tar_folder(folder: Path, exp: Experiment) -> Path:
+	tar_path = folder.parent / exp.tar_filename
 	if tar_path.exists():
 		tar_path.unlink()
 
@@ -285,7 +280,7 @@ def run_single_experiment(exp: Experiment, ranks: int) -> None:
 		dest_dir = copy_ser_data(exp, ranks)
 		
 		log_status(f"Creating tar archive for {exp.name} with {ranks} ranks")
-		tar_folder(dest_dir, exp.tar_name)
+		tar_folder(dest_dir, exp)
 		
 		log_status(f"Completed {exp.name} with {ranks} ranks")
 	except Exception as e:
