@@ -243,15 +243,10 @@ def copy_ser_data(exp: Experiment, ranks: int) -> Path:
 	shutil.copytree(src_dir, dest_dir / "ser_data")
 	
 	# Copy NAMELIST files
-	namelist_files = [
-		f"NAMELIST_{exp.name}",
-		"NAMELIST_ICON_output_atm",
-	]
-	for namelist_file in namelist_files:
-		src_file = exp_dir / namelist_file
-		if not src_file.exists():
-			raise FileNotFoundError(f"Missing namelist file: {src_file}")
-		shutil.copy2(src_file, dest_dir / namelist_file)
+	namelist_files = sorted(exp_dir.glob("NAMELIST_*"))
+	for src_file in namelist_files:
+		if src_file.is_file():
+			shutil.copy2(src_file, dest_dir / src_file.name)
 	
 	return dest_dir
 
