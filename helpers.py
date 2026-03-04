@@ -6,7 +6,12 @@ from icon4py.model.common.grid.base import GeometryType
 from matplotlib.collections import PolyCollection
 
 
-def plot_grid(tri: mpl.tri.Triangulation, ax=None, print_indexes: bool = True, plot_masked: bool = True) -> None:
+def plot_grid(
+    tri: mpl.tri.Triangulation,
+    ax=None,
+    print_indexes: bool = True,
+    plot_masked: bool = True,
+) -> None:
     if ax is None:
         fig = plt.figure(1)
         plt.show(block=False)
@@ -14,7 +19,7 @@ def plot_grid(tri: mpl.tri.Triangulation, ax=None, print_indexes: bool = True, p
     ax.triplot(tri, color="k", linewidth=0.8)
     _plot_points_and_indices(ax, tri, show_points=True, print_indexes=print_indexes)
     ax.set_aspect("equal")
-    
+
     # Plot masked (boundary) triangles with dashed lines
     if plot_masked and tri.mask is not None:
         _plot_masked_triangles(ax, tri)
@@ -83,7 +88,9 @@ def read_gridfile(grid_file_name: str) -> dict:
     }
 
 
-def _triangle_plot_coords(tri: mpl.tri.Triangulation, idx: int) -> tuple[np.ndarray, np.ndarray]:
+def _triangle_plot_coords(
+    tri: mpl.tri.Triangulation, idx: int
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Return triangle coordinates shifted so wrapped cells plot on the correct side of a torus.
     """
@@ -105,15 +112,23 @@ def _triangle_plot_coords(tri: mpl.tri.Triangulation, idx: int) -> tuple[np.ndar
 
         if span_x > domain_length / 2:
             if center_x < domain_length / 2:
-                x_shifted = np.where(x_coords > domain_length / 2, x_coords - domain_length, x_coords)
+                x_shifted = np.where(
+                    x_coords > domain_length / 2, x_coords - domain_length, x_coords
+                )
             else:
-                x_shifted = np.where(x_coords < domain_length / 2, x_coords + domain_length, x_coords)
+                x_shifted = np.where(
+                    x_coords < domain_length / 2, x_coords + domain_length, x_coords
+                )
 
         if span_y > domain_height / 2:
             if center_y < domain_height / 2:
-                y_shifted = np.where(y_coords > domain_height / 2, y_coords - domain_height, y_coords)
+                y_shifted = np.where(
+                    y_coords > domain_height / 2, y_coords - domain_height, y_coords
+                )
             else:
-                y_shifted = np.where(y_coords < domain_height / 2, y_coords + domain_height, y_coords)
+                y_shifted = np.where(
+                    y_coords < domain_height / 2, y_coords + domain_height, y_coords
+                )
 
     x_plot = np.append(x_shifted, x_shifted[0])
     y_plot = np.append(y_shifted, y_shifted[0])
@@ -124,7 +139,15 @@ def _plot_masked_triangles(ax, tri: mpl.tri.Triangulation, **kwargs) -> None:
     masked_indices = np.where(tri.mask)[0]
     for idx in masked_indices:
         x_plot, y_plot = _triangle_plot_coords(tri, idx)
-        ax.plot(x_plot, y_plot, color="k", linewidth=0.5, linestyle="--", dashes=(5, 5), **kwargs)
+        ax.plot(
+            x_plot,
+            y_plot,
+            color="k",
+            linewidth=0.5,
+            linestyle="--",
+            dashes=(5, 5),
+            **kwargs,
+        )
 
 
 def _plot_points_and_indices(
@@ -139,11 +162,11 @@ def _plot_points_and_indices(
         ax.plot(tri.cell_x, tri.cell_y, "ob")
 
     if print_indexes:
-        for i, (x, y) in enumerate(zip(tri.x*1.05, tri.y)):
+        for i, (x, y) in enumerate(zip(tri.x * 1.05, tri.y)):
             ax.text(x, y, str(i), color="r", fontsize=10)
-        for i, (x, y) in enumerate(zip(tri.edge_x*1.05, tri.edge_y)):
+        for i, (x, y) in enumerate(zip(tri.edge_x * 1.05, tri.edge_y)):
             ax.text(x, y, str(i), color="g", fontsize=10)
-        for i, (x, y) in enumerate(zip(tri.cell_x*1.05, tri.cell_y)):
+        for i, (x, y) in enumerate(zip(tri.cell_x * 1.05, tri.cell_y)):
             ax.text(x, y, str(i), color="b", fontsize=10)
 
 
@@ -319,9 +342,19 @@ def plot_partitioned_grid(
 
     if label_ranks:
         for idx, rank in enumerate(c2rank_mapping):
-            ax.text(tri.cell_x[idx]*1.05, tri.cell_y[idx], str(int(rank)), color="k", fontsize=10, ha="center", va="center")
+            ax.text(
+                tri.cell_x[idx] * 1.05,
+                tri.cell_y[idx],
+                str(int(rank)),
+                color="k",
+                fontsize=10,
+                ha="center",
+                va="center",
+            )
 
-    _plot_points_and_indices(ax, tri, show_points=show_points, print_indexes=print_indexes)
+    _plot_points_and_indices(
+        ax, tri, show_points=show_points, print_indexes=print_indexes
+    )
 
     ax.set_aspect("equal")
     plt.draw()
@@ -366,7 +399,9 @@ def plot_subdomains(
     # Same owned color for every subdomain; consistent halo colors by level across ranks
     owned_color = owned_cm(0)
     max_levels = max(len(sd.get("halo_levels", [])) for sd in subdomains)
-    halo_levels_colors = [halo_cm((i + 1) / (max_levels + 1 or 1)) for i in range(max_levels)]
+    halo_levels_colors = [
+        halo_cm((i + 1) / (max_levels + 1 or 1)) for i in range(max_levels)
+    ]
 
     for ax, sd in zip(axes, subdomains):
         polys = []
@@ -378,7 +413,11 @@ def plot_subdomains(
             facecolors.append(owned_color)
 
         for lvl, cells in enumerate(sd.get("halo_levels", [])):
-            halo_color = halo_levels_colors[lvl % len(halo_levels_colors)] if halo_levels_colors else (0.7, 0.7, 0.7, 1)
+            halo_color = (
+                halo_levels_colors[lvl % len(halo_levels_colors)]
+                if halo_levels_colors
+                else (0.7, 0.7, 0.7, 1)
+            )
             for cell in cells:
                 x_plot, y_plot = _triangle_plot_coords(tri, cell)
                 polys.append(np.column_stack([x_plot[:-1], y_plot[:-1]]))
@@ -399,15 +438,51 @@ def plot_subdomains(
         if show_masked and tri.mask is not None:
             _plot_masked_triangles(ax, tri)
 
-        _plot_points_and_indices(ax, tri, show_points=show_points, print_indexes=print_indexes)
+        _plot_points_and_indices(
+            ax, tri, show_points=show_points, print_indexes=print_indexes
+        )
 
         ax.set_title(f"Rank {sd['rank']}")
         ax.set_aspect("equal")
 
     # Hide any unused axes
     for ax in axes[n:]:
-        ax.axis('off')
+        ax.axis("off")
 
     plt.tight_layout()
     plt.draw()
     plt.show(block=False)
+
+
+def lonlat2cart(lon: float, lat: float) -> tuple[float, float, float]:
+    """
+    Convert longitude/latitude to Cartesian coordinates on a unit sphere.
+
+    Args:
+        lon: Longitude in radians
+        lat: Latitude in radians
+
+    Returns:
+        Tuple of (x, y, z) Cartesian coordinates on unit sphere
+    """
+    x = np.cos(lat) * np.cos(lon)
+    y = np.cos(lat) * np.sin(lon)
+    z = np.sin(lat)
+    return x, y, z
+
+
+def cart2lonlat(x: float, y: float, z: float) -> tuple[float, float]:
+    """
+    Convert Cartesian coordinates to longitude/latitude on a unit sphere.
+
+    Args:
+        x: X coordinate
+        y: Y coordinate
+        z: Z coordinate
+
+    Returns:
+        Tuple of (lon, lat) in radians
+    """
+    lat = np.arcsin(z)
+    lon = np.arctan2(y, x)
+    return lon, lat

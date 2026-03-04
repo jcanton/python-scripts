@@ -1,8 +1,8 @@
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+import numpy as np
+import pyvista as pv
 import xarray as xr
-import uxarray as ux
-import panel as pn
+
+import helpers
 
 # grid_filename = "./data/global_grid_R02B02.nc"
 grid_filename = "./testdata/grids/r01b01_global/icon_grid_R01B01.nc"
@@ -11,54 +11,53 @@ grid_filename = "./testdata/grids/r01b01_global/icon_grid_R01B01.nc"
 # Load grid file
 #
 with open(grid_filename, "rb") as f:
-    uxgrid = xr.open_dataset(f)
+    grid = xr.open_dataset(f)
 
 # -------------------------------------------------------------------------------
-# Create matplotlib triangulation
+# Create PyVista mesh
 #
-v_x = uxgrid.cartesian_x_vertices.values
-v_y = uxgrid.cartesian_y_vertices.values
-v_z = uxgrid.cartesian_z_vertices.values
+v_x = grid.cartesian_x_vertices.values
+v_y = grid.cartesian_y_vertices.values
+v_z = grid.cartesian_z_vertices.values
 
-c2v = uxgrid.vertex_of_cell.values.T - 1  # transpose and convert to 0-based
-v2v = uxgrid.vertices_of_vertex
+c_x, c_y, c_z = helpers.lonlat2cart(grid.clon, grid.clat)
 
-tri = mpl.tri.Triangulation(
-    v_x,
-    v_y,
-    triangles=c2v,
-)
+c2v = grid.vertex_of_cell.values.T - 1  # transpose and convert to 0-based
+
+# Stack vertices into Nx3 array
+vertices = np.column_stack([v_x, v_y, v_z])
+
+# Convert triangles to PyVista format: [n_pts, idx0, idx1, idx2, ...]
+faces = np.column_stack([np.full(len(c2v), 3), c2v]).flatten()
+
+# Create mesh
+mesh = pv.PolyData(vertices, faces)
 
 # -------------------------------------------------------------------------------
-# Plot 3D
+# Plot with PyVista
 #
-fig = plt.figure(2)
-plt.clf()
-plt.show(block=False)
-ax = plt.axes(projection="3d", computed_zorder=False)
-ax.plot_trisurf(
-    v_x,
-    v_y,
-    v_z,
-    triangles=tri.triangles,
+plotter = pv.Plotter()
+plotter.add_mesh(
+    mesh,
     color="lightgrey",
-    linewidth=0.2,
-    edgecolor="black",
-    alpha=0.99,
-    zorder=1,
+    edge_color="black",
+    line_width=0.2,
+    show_edges=True,
 )
-ax.set_aspect("equal")
-plt.draw()
 
-# -------------------------------------------------------------------------------
-# UXarray
-#
-uxgrid = ux.open_grid(grid_filename)
-hvplot = (
-    uxgrid.plot.edges(periodic_elements="ignore", color="black")
-    * uxgrid.plot.nodes(marker="o", size=150).relabel("Corner Nodes")
-    * uxgrid.plot.face_centers(marker="s", size=150).relabel("Face Centers")
-    * uxgrid.plot.edge_centers(marker="^", size=150).relabel("Edge Centers")
-).opts(width=1400, height=700, title="Grid Coordinates", legend_position="top_right")
+plotter.add_points(
+    np.column_stack([c_x, c_y, c_z]),
+    color="red",
+    point_size=20,
+)
 
-server = pn.panel(hvplot).show()
+# Add labels
+for i, (x, y, z) in enumerate(zip(c_x, c_y, c_z)):
+    plotter.add_point_labels(
+        [(x, y, z)],
+        [str(i)],
+        font_size=30,
+        text_color="red",
+    )
+
+plotter.show()
