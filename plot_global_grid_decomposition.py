@@ -32,6 +32,7 @@ except AttributeError:
     v_x, v_y, v_z = helpers.lonlat2cart(grid.vlon, grid.vlat)
 
 c_x, c_y, c_z = helpers.lonlat2cart(grid.clon, grid.clat)
+e_x, e_y, e_z = helpers.lonlat2cart(grid.elon, grid.elat)
 
 c2v = grid.vertex_of_cell.values.T - 1  # transpose and convert to 0-based
 
@@ -76,6 +77,17 @@ global_plotter.add_mesh(
 #global_plotter.show()
 
 # -------------------------------------------------------------------------------
+# Define color scheme for categories
+#
+CATEGORY_COLORS = {
+    "owned": "cyan",
+    "cutting_line": "red",
+    "halo": "yellow",
+    "second_halo": "purple",
+    "third_halo": "black",
+}
+
+# -------------------------------------------------------------------------------
 # Create plotter with 2x2 subplots for rank decompositions
 #
 plotter = pv.Plotter(shape=(2, 2), title="Rank Decomposition")
@@ -95,9 +107,33 @@ for idx, rank_file in enumerate(ranked_dumps):
     with open(rank_file, "rb") as f:
         partition = pickle.load(f)
 
+    # Available data
+    # "owned_cells": owned_cells,
+    # "first_halo_cells": first_halo_cells,
+    # "second_halo_cells": second_halo_cells,
+    # "vertex_owner_list": vertex_owner_list,
+    # "vertex_on_halo_cells": self._xp.setdiff1d(vertex_on_owned_cells, vertex_owner_list),
+    # "vertex_second_halo": vertex_second_halo,
+    # "vertex_on_cutting_line": vertex_on_cutting_line,
+    # "edge_owner_list": edge_owner_list,
+    # "edge_on_halo_cells": self._xp.setdiff1d(edge_on_owned_cells, edge_owner_list),
+    # "edge_second_level": edge_second_level,
+    # "edge_third_level": edge_third_level,
+
     owned_cells = partition["owned_cells"]
     first_halo_cells = partition["first_halo_cells"]
     second_halo_cells = partition["second_halo_cells"]
+
+    vertex_owner_list = partition["vertex_owner_list"]
+    vertex_on_halo_cells = partition["vertex_on_halo_cells"]
+    vertex_second_halo = partition["vertex_second_halo"]
+    vertex_on_cutting_line = partition["vertex_on_cutting_line"]
+
+    edge_owner_list = partition["edge_owner_list"]
+    edge_on_halo_cells = partition["edge_on_halo_cells"]
+    edge_second_level = partition["edge_second_level"]
+    edge_third_level = partition["edge_third_level"]
+
 
     rank_num = int(rank_file.split("rank")[1].split("_")[0])
 
@@ -127,24 +163,61 @@ for idx, rank_file in enumerate(ranked_dumps):
         scalar_bar_args={"title": "Cell Type", "label_font_size": FONT_SIZE},
     )
 
-    # Add cell center labels for owned and halo cells
-    for cell_idx in owned_cells:
-        plotter.add_point_labels(
-            [(c_x[cell_idx], c_y[cell_idx], c_z[cell_idx])],
-            [str(cell_idx)],
-            font_size=FONT_SIZE,
-            text_color="black",
-            always_visible=False,
-        )
+    # Add vertices with different colors for each category
+    vertex_categories = {
+        "owned": vertex_owner_list,
+        "cutting_line": vertex_on_cutting_line,
+        "halo": vertex_on_halo_cells,
+        "second_halo": vertex_second_halo,
+    }
 
-    for cell_idx in first_halo_cells:
-        plotter.add_point_labels(
-            [(c_x[cell_idx], c_y[cell_idx], c_z[cell_idx])],
-            [str(cell_idx)],
-            font_size=FONT_SIZE,
-            text_color="black",
-            always_visible=False,
-        )
+    for label, vertices_idx in vertex_categories.items():
+        if len(vertices_idx) > 0:
+            vertex_coords = np.column_stack([v_x[vertices_idx], v_y[vertices_idx], v_z[vertices_idx]])
+            plotter.add_points(
+                vertex_coords,
+                color=CATEGORY_COLORS[label],
+                point_size=12,
+                label=f"vertex_{label}",
+            )
+
+    # Add edges with different colors for each category
+    edge_categories = {
+        "owned": edge_owner_list,
+        "cutting_line": edge_third_level,
+        "halo": edge_on_halo_cells,
+        "second_halo": edge_second_level,
+        "third_halo": edge_third_level,
+    }
+
+    for label, edges_idx in edge_categories.items():
+        if len(edges_idx) > 0:
+            edge_coords = np.column_stack([e_x[edges_idx], e_y[edges_idx], e_z[edges_idx]])
+            plotter.add_points(
+                edge_coords,
+                color=CATEGORY_COLORS[label],
+                point_size=10,
+                label=f"edge_{label}",
+            )
+
+    # # Add cell center labels for owned and halo cells
+    # for cell_idx in owned_cells:
+    #     plotter.add_point_labels(
+    #         [(c_x[cell_idx], c_y[cell_idx], c_z[cell_idx])],
+    #         [str(cell_idx)],
+    #         font_size=FONT_SIZE,
+    #         text_color="black",
+    #         always_visible=False,
+    #     )
+    #
+    # for cell_idx in first_halo_cells:
+    #     plotter.add_point_labels(
+    #         [(c_x[cell_idx], c_y[cell_idx], c_z[cell_idx])],
+    #         [str(cell_idx)],
+    #         font_size=FONT_SIZE,
+    #         text_color="black",
+    #         always_visible=False,
+    #     )
 
 # Link cameras across all subplots to sync rotation and zoom
 plotter.link_views()
